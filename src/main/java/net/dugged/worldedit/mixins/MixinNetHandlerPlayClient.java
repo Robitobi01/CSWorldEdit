@@ -1,5 +1,6 @@
 package net.dugged.worldedit.mixins;
 
+import net.dugged.worldedit.Configuration;
 import net.dugged.worldedit.tasks.*;
 import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.network.play.server.SPacketChat;
@@ -18,6 +19,9 @@ public class MixinNetHandlerPlayClient {
 
 	@Inject(method = "handleChat", at = @At(value = "INVOKE", target = START_OF_PACKET, shift = At.Shift.AFTER), cancellable = true)
 	private void onHandleChat(SPacketChat packet, CallbackInfo ci) {
+		if (!Configuration.enabled) {
+			return;
+		}
 		if (packet.isSystem()) {
 			final String chatLine = packet.getChatComponent().getUnformattedText();
 			if (TaskManager.getInstance().isActive() && (
@@ -40,6 +44,9 @@ public class MixinNetHandlerPlayClient {
 
 	@Inject(method = "handleTabComplete", at = @At(value = "INVOKE", target = START_OF_PACKET, shift = At.Shift.AFTER))
 	private void onHandleTabComplete(SPacketTabComplete packetIn, CallbackInfo ci) {
+		if (!Configuration.enabled) {
+			return;
+		}
 		if (worldEdit$contains(packetIn.getMatches(), "setblock")) {
 			TaskSetBlock.setblockPermission = true;
 		} else if (worldEdit$contains(packetIn.getMatches(), "fill")) {

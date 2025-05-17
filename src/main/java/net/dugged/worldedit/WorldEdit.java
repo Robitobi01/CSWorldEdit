@@ -36,7 +36,6 @@ public class WorldEdit {
 	@Mod.EventHandler
 	public void preInit(FMLPreInitializationEvent event) {
 		MinecraftForge.EVENT_BUS.register(this);
-		LOGGER.info("Hello From {}! Enabled: {}", Tags.MOD_NAME, Configuration.enabled);
 	}
 
 	@Mod.EventHandler
@@ -53,7 +52,7 @@ public class WorldEdit {
 
 	@SubscribeEvent
 	public void onTick(final TickEvent.ClientTickEvent event) {
-		if (event.phase != TickEvent.Phase.END) {
+		if (!Configuration.enabled || event.phase != TickEvent.Phase.END) {
 			return;
 		}
 		ClientCommandHandler.getInstance().tick();
@@ -63,12 +62,18 @@ public class WorldEdit {
 
 	@SubscribeEvent
 	public void render(final RenderWorldLastEvent event) {
+		if (!Configuration.enabled) {
+			return;
+		}
 		WorldEditRenderer.render(event.getPartialTicks());
 		TaskRenderer.renderTasks(event.getPartialTicks());
 	}
 
 	@SubscribeEvent
 	public void onLeftClickBlock(final PlayerInteractEvent.LeftClickBlock event) {
+		if (!Configuration.enabled) {
+			return;
+		}
 		Item itemInHand = mc.player.getHeldItemMainhand().getItem();
 		if (mc.player.isCreative() && itemInHand instanceof ItemSword) {
 			Item.ToolMaterial material = ((IItemSword) itemInHand).getMaterial();
@@ -88,6 +93,9 @@ public class WorldEdit {
 
 	@SubscribeEvent
 	public void onRightClickBlock(final PlayerInteractEvent.RightClickBlock event) {
+		if (!Configuration.enabled) {
+			return;
+		}
 		Item itemInHand = mc.player.getHeldItemMainhand().getItem();
 		if (mc.player.isCreative() && itemInHand instanceof ItemSword) {
 			Item.ToolMaterial material = ((IItemSword) itemInHand).getMaterial();

@@ -1,5 +1,6 @@
 package net.dugged.worldedit.mixins;
 
+import net.dugged.worldedit.Configuration;
 import net.dugged.worldedit.UndoManager;
 import net.dugged.worldedit.clientcommands.ClientCommandHandler;
 import net.minecraft.client.Minecraft;
@@ -14,6 +15,9 @@ public abstract class MixinGuiScreen {
 
 	@Inject(method = "sendChatMessage(Ljava/lang/String;Z)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/entity/EntityPlayerSP;sendChatMessage(Ljava/lang/String;)V"), cancellable = true)
 	private void addExecute(String msg, boolean addToChat, CallbackInfo ci) {
+		if (!Configuration.enabled) {
+			return;
+		}
 		Minecraft mc = Minecraft.getMinecraft();
 		if (ClientCommandHandler.getInstance().executeCommand(mc.player, msg)
 				!= 0) {

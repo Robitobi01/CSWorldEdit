@@ -1,6 +1,7 @@
 package net.dugged.worldedit.mixins;
 
 import com.google.common.base.Strings;
+import net.dugged.worldedit.Configuration;
 import net.dugged.worldedit.WorldEdit;
 import net.dugged.worldedit.tasks.TaskManager;
 import net.minecraft.client.Minecraft;
@@ -31,6 +32,9 @@ public abstract class MixinGuiBossOverlay extends Gui {
 
 	@Inject(method = "renderBossHealth", at = @At("HEAD"))
 	private void renderProgressBar(CallbackInfo ci) {
+		if (!Configuration.enabled) {
+			return;
+		}
 		final Minecraft mc = Minecraft.getMinecraft();
 		final float progress = TaskManager.getInstance().getProgress();
 		ScaledResolution scaledresolution = new ScaledResolution(mc);

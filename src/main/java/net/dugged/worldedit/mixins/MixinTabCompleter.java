@@ -2,6 +2,7 @@ package net.dugged.worldedit.mixins;
 
 
 import com.google.common.collect.ObjectArrays;
+import net.dugged.worldedit.Configuration;
 import net.dugged.worldedit.clientcommands.ClientCommandHandler;
 import net.minecraft.util.TabCompleter;
 import net.minecraft.util.text.TextFormatting;
@@ -20,11 +21,17 @@ public abstract class MixinTabCompleter {
 
 	@Inject(method = "requestCompletions", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/NetHandlerPlayClient;sendPacket(Lnet/minecraft/network/Packet;)V"))
 	private void addAutoComplete(String prefix, CallbackInfo ci) {
+		if (!Configuration.enabled) {
+			return;
+		}
 		ClientCommandHandler.getInstance().autoComplete(prefix);
 	}
 
 	@ModifyVariable(method = "setCompletions", at = @At(value = "INVOKE", target = "Ljava/util/List;clear()V", remap = false), argsOnly = true)
 	private String[] setLatestAutoComplete(String... completions) {
+		if (!Configuration.enabled) {
+			return completions;
+		}
 		final String[] complete = ClientCommandHandler.getInstance().latestAutoComplete;
 		if (complete != null) {
 			return ObjectArrays.concat(complete, completions, String.class);
