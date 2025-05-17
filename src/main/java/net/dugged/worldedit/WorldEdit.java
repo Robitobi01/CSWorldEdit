@@ -3,13 +3,12 @@ package net.dugged.worldedit;
 import net.dugged.worldedit.brushes.BrushBase;
 import net.dugged.worldedit.clientcommands.ClientCommandHandler;
 import net.dugged.worldedit.mixins.IItemSword;
+import net.dugged.worldedit.tasks.TaskRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
-import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemSword;
-import net.minecraft.tileentity.TileEntityChest;
-import net.minecraftforge.client.GuiIngameForge;
+import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.config.Config;
 import net.minecraftforge.common.config.ConfigManager;
@@ -60,6 +59,12 @@ public class WorldEdit {
 		ClientCommandHandler.getInstance().tick();
 		tickCounter++;
 		swordCooldown--;
+	}
+
+	@SubscribeEvent
+	public void render(final RenderWorldLastEvent event) {
+		WorldEditRenderer.render(event.getPartialTicks());
+		TaskRenderer.renderTasks(event.getPartialTicks());
 	}
 
 	@SubscribeEvent
