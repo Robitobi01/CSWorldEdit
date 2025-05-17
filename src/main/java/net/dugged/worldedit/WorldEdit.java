@@ -1,0 +1,109 @@
+package net.dugged.worldedit;
+
+import net.dugged.worldedit.brushes.BrushBase;
+import net.dugged.worldedit.clientcommands.ClientCommandHandler;
+import net.dugged.worldedit.mixins.IItemSword;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemSword;
+import net.minecraft.tileentity.TileEntityChest;
+import net.minecraftforge.client.GuiIngameForge;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.config.Config;
+import net.minecraftforge.common.config.ConfigManager;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.fml.client.event.ConfigChangedEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.event.FMLInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import static net.dugged.worldedit.WorldEditSelection.Position.A;
+import static net.dugged.worldedit.WorldEditSelection.Position.B;
+
+@Mod(modid = Tags.MOD_ID, name = Tags.MOD_NAME, version = Tags.VERSION)
+public class WorldEdit {
+
+	public static final Logger LOGGER = LogManager.getLogger(Tags.MOD_NAME);
+	private static final Minecraft mc = Minecraft.getMinecraft();
+	public static long tickCounter = 0;
+	private static long swordCooldown = 0;
+
+	@Mod.EventHandler
+	public void preInit(FMLPreInitializationEvent event) {
+		MinecraftForge.EVENT_BUS.register(this);
+		LOGGER.info("Hello From {}! Enabled: {}", Tags.MOD_NAME, Configuration.enabled);
+	}
+
+	@Mod.EventHandler
+	public void init(final FMLInitializationEvent event) {
+		ClientCommandHandler.getInstance().init();
+	}
+
+	@SubscribeEvent
+	public void onConfigChangedEvent(final ConfigChangedEvent.OnConfigChangedEvent event) {
+		if (event.getModID().equals(Tags.MOD_ID)) {
+			ConfigManager.sync(Tags.MOD_ID, Config.Type.INSTANCE);
+		}
+	}
+
+	@SubscribeEvent
+	public void onTick(final TickEvent.ClientTickEvent event) {
+		if (event.phase != TickEvent.Phase.END) {
+			return;
+		}
+		ClientCommandHandler.getInstance().tick();
+		tickCounter++;
+		swordCooldown--;
+	}
+
+	@SubscribeEvent
+	public void onLeftClickBlock(final PlayerInteractEvent.LeftClickBlock event) {
+		Item itemInHand = mc.player.getHeldItemMainhand().getItem();
+		if (mc.player.isCreative() && itemInHand instanceof ItemSword) {
+			Item.ToolMaterial material = ((IItemSword) itemInHand).getMaterial();
+			if (swordCooldown > tickCounter) {
+				event.setCanceled(true);
+			} else if (mc.player instanceof EntityPlayerSP) {
+				if (WorldEditManager.getPos(material, A) == null || !WorldEditManager.getPos(material, A).equals(event.getPos())) {
+					WorldEditManager.setPos(material, A, event.getPos());
+				} else {
+					WorldEditManager.setPos(material, A, null);
+				}
+				swordCooldown = tickCounter + 10;
+				event.setCanceled(true);
+			}
+		}
+	}
+
+	@SubscribeEvent
+	public void onRightClickBlock(final PlayerInteractEvent.RightClickBlock event) {
+		Item itemInHand = mc.player.getHeldItemMainhand().getItem();
+		if (mc.player.isCreative() && itemInHand instanceof ItemSword) {
+			Item.ToolMaterial material = ((IItemSword) itemInHand).getMaterial();
+			if (swordCooldown > tickCounter) {
+				event.setCanceled(true);
+			} else if (mc.player != null) {
+				if (WorldEditManager.getPos(material, B) == null || !WorldEditManager.getPos(material, B).equals(event.getPos())) {
+					WorldEditManager.setPos(material, B, event.getPos());
+				} else {
+					WorldEditManager.setPos(material, B, null);
+				}
+				swordCooldown = tickCounter + 10;
+				event.setCanceled(true);
+			}
+		} else if (mc.player.isCreative() && WorldEditManager.currentBrushes.containsKey(itemInHand)) {
+			BrushBase brush = WorldEditManager.currentBrushes.get(itemInHand);
+			if (brush.getUseCooldown() <= tickCounter) {
+				brush.execute(mc.world, event.getPos());
+				brush.setUseCooldown(tickCounter + 2);
+			}
+			event.setCanceled(true);
+		}
+	}
+}

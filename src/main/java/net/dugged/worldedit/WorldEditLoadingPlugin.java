@@ -1,4 +1,4 @@
-package net.dugged.examplemod;
+package net.dugged.worldedit;
 
 import net.minecraftforge.common.ForgeVersion;
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
@@ -9,13 +9,13 @@ import javax.annotation.Nullable;
 import java.util.Map;
 
 @IFMLLoadingPlugin.MCVersion(ForgeVersion.mcVersion)
-public class ExampleModLoadingPlugin implements IFMLLoadingPlugin {
-    public ExampleModLoadingPlugin() {
-        MixinBootstrap.init();
-        Mixins.addConfiguration("mixins.examplemod.json");
-    }
+public class WorldEditLoadingPlugin implements IFMLLoadingPlugin {
+	public WorldEditLoadingPlugin() {
+		MixinBootstrap.init();
+		Mixins.addConfiguration("mixins.worldedit.json");
+	}
 
-    // @formatter:off
+	// @formatter:off
     @Override public String getAccessTransformerClass() { return null; }
     @Override public String[] getASMTransformerClass() { return null; }
     @Override public void injectData(final Map<String, Object> data) {}
