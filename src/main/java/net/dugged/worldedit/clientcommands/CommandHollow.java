@@ -44,7 +44,7 @@ public class CommandHollow extends ClientCommand {
 					blockState = convertArgToBlockState(block, args[1]);
 				}
 				int thickness = 0;
-				if (args.length >= 3) {
+				if (args.length == 3) {
 					thickness = parseInt(args[2]) - 1;
 					if (thickness <= 0) {
 						thickness = 0;

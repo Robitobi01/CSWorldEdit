@@ -72,10 +72,6 @@ public class TaskManager {
 		return !tasks.isEmpty();
 	}
 
-	public Set<ChunkPos> getCurrentlyProcessingChunks() {
-		return currentlyProcessing;
-	}
-
 	public void tick() {
 		currentlyProcessing.clear();
 		int packetsThisTick = 0;

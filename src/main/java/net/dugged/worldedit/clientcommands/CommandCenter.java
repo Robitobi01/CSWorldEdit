@@ -43,7 +43,7 @@ public class CommandCenter extends ClientCommand {
 					block = getBlockByText(sender, args[0]);
 				}
 				IBlockState blockState = block.getDefaultState();
-				if (args.length >= 2) {
+				if (args.length == 2) {
 					blockState = convertArgToBlockState(block, args[1]);
 				}
 				Map<BlockPos, IBlockState> blocksToPlace = new HashMap<>();

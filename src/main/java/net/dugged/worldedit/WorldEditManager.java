@@ -24,10 +24,10 @@ import static net.dugged.worldedit.WorldEditSelection.Position.B;
 
 public class WorldEditManager {
 
+	public static final List<BrushBase> brushes = new ArrayList<>();
+	public static final HashMap<Item, BrushBase> currentBrushes = new HashMap<>();
+	protected static final HashMap<WorldEditSelection.SelectionType, WorldEditSelection> selections = new HashMap<>();
 	private static final Minecraft mc = Minecraft.getMinecraft();
-	public static List<BrushBase> brushes = new ArrayList<>();
-	public static HashMap<Item, BrushBase> currentBrushes = new HashMap<>();
-	protected static HashMap<WorldEditSelection.SelectionType, WorldEditSelection> selections = new HashMap<>();
 
 	public static BlockPos getPos(WorldEditSelection.SelectionType type,
 								  WorldEditSelection.Position pos) {
@@ -88,7 +88,7 @@ public class WorldEditManager {
 		return new BlockPos(mc.player.posX, mc.player.posY, mc.player.posZ);
 	}
 
-	public static EnumFacing getLookingDirection() {
+	public static EnumFacing getFacingDirection() {
 		Entity entity = mc.getRenderViewEntity();
 		EnumFacing enumfacing = entity.getHorizontalFacing();
 		if (entity.rotationPitch > 45) {
@@ -99,8 +99,8 @@ public class WorldEditManager {
 		return enumfacing;
 	}
 
-	public static BlockPos offsetLookingDirection(BlockPos pos, int offset) {
-		return new BlockPos(pos.offset(getLookingDirection(), offset));
+	public static BlockPos offsetFacingDirection(BlockPos pos, int offset) {
+		return new BlockPos(pos.offset(getFacingDirection(), offset));
 	}
 
 	public static void sendMessage(String msg) {

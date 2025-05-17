@@ -25,9 +25,9 @@ public abstract class MixinGuiBossOverlay extends Gui {
 	@Final
 	private static ResourceLocation GUI_BARS_TEXTURES;
 	@Unique
-	private int counter = 0;
+	private int worldEdit$counter = 0;
 	@Unique
-	private long lastTick = 0;
+	private long worldEdit$lastTick = 0;
 
 	@Inject(method = "renderBossHealth", at = @At("HEAD"))
 	private void renderProgressBar(CallbackInfo ci) {
@@ -54,23 +54,23 @@ public abstract class MixinGuiBossOverlay extends Gui {
 			if (TaskManager.getInstance().isWaitingForPlayer()) {
 				s = new TextComponentTranslation(
 						"text.worldedit.progressWaiting").getUnformattedText();
-				s += Strings.repeat(".", counter);
+				s += Strings.repeat(".", worldEdit$counter);
 				mc.fontRenderer.drawString(s, i / 2 - mc.fontRenderer.getStringWidth(s) / 2, y - 20,
 						16777215);
 			}
 		} else if (!TaskManager.getInstance().threads.isEmpty()) {
 			String s = new TextComponentTranslation(
 					"text.worldedit.progressProcessing").getUnformattedText();
-			s += Strings.repeat(".", counter);
+			s += Strings.repeat(".", worldEdit$counter);
 			mc.fontRenderer.drawString(s, i / 2 - mc.fontRenderer.getStringWidth(s) / 2, y - 10,
 					16777215);
 		}
-		if (WorldEdit.tickCounter % 10 == 0 && lastTick != WorldEdit.tickCounter) {
-			counter++;
-			lastTick = WorldEdit.tickCounter;
+		if (WorldEdit.tickCounter % 10 == 0 && worldEdit$lastTick != WorldEdit.tickCounter) {
+			worldEdit$counter++;
+			worldEdit$lastTick = WorldEdit.tickCounter;
 		}
-		if (counter > 3) {
-			counter = 0;
+		if (worldEdit$counter > 3) {
+			worldEdit$counter = 0;
 		}
 	}
 }

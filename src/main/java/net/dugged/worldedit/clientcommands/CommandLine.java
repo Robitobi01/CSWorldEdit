@@ -127,7 +127,7 @@ public class CommandLine extends ClientCommand {
 					block = getBlockByText(sender, args[0]);
 				}
 				IBlockState blockState;
-				if (args.length >= 2) {
+				if (args.length == 2) {
 					blockState = convertArgToBlockState(block, args[1]);
 				} else {
 					blockState = block.getDefaultState();

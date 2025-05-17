@@ -7,7 +7,6 @@ import net.dugged.worldedit.tasks.TaskSetBlock;
 import net.minecraft.block.BlockLiquid;
 import net.minecraft.block.material.MapColor;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.EnumDyeColor;
@@ -78,8 +77,7 @@ public class CommandWoolify extends ClientCommand {
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args)
-			throws CommandException {
+	public void execute(MinecraftServer server, ICommandSender sender, String[] args) {
 		if (args.length == 0) {
 			if (WorldEditManager.hasCurrentSelection()) {
 				WorldEditSelection selection = WorldEditManager.getCurrentSelection();

@@ -8,7 +8,7 @@ import net.minecraft.server.MinecraftServer;
 
 public abstract class ClientCommand extends CommandBase {
 
-	protected static Minecraft mc = Minecraft.getMinecraft();
+	protected static final Minecraft mc = Minecraft.getMinecraft();
 	public boolean creativeOnly = true;
 
 	@Override

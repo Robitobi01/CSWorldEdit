@@ -35,7 +35,7 @@ public class CommandCyl extends ClientCommand {
 				"text.worldedit.cyl.usage").getUnformattedText();
 	}
 
-	private void generateCyl(World world, WorldEditSelection selection, BlockPos center,
+	private void generateCyl(World world, BlockPos center,
 							 IBlockState blockState, double radius, int height) {
 		if (height > world.getHeight() - center.getY()) {
 			height = world.getHeight() - center.getY();
@@ -87,7 +87,7 @@ public class CommandCyl extends ClientCommand {
 						height = 1;
 					}
 					Thread t = new Thread(
-							() -> generateCyl(world, selection, selection.getPos(A), blockState, radius,
+							() -> generateCyl(world, selection.getPos(A), blockState, radius,
 									height));
 					t.start();
 					TaskManager.getInstance().threads.add(t);

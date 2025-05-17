@@ -51,7 +51,7 @@ public class CommandStack extends ClientCommand {
 					moveSelection = parseBoolean(args[3]);
 				}
 				TaskClone.Mode mode = masked ? TaskClone.Mode.MASKED : TaskClone.Mode.FORCE;
-				final EnumFacing facing = WorldEditManager.getLookingDirection();
+				final EnumFacing facing = WorldEditManager.getFacingDirection();
 				BlockPos minPos = selection.minPos();
 				BlockPos maxPos = selection.maxPos();
 				BlockPos lastCloneOrigin = null;
@@ -60,15 +60,15 @@ public class CommandStack extends ClientCommand {
 					BlockPos dest;
 					switch (facing.getAxis()) {
 						case Y:
-							dest = WorldEditManager.offsetLookingDirection(minPos,
+							dest = WorldEditManager.offsetFacingDirection(minPos,
 									i * (blocksOffset + selection.widthY()));
 							break;
 						case Z:
-							dest = WorldEditManager.offsetLookingDirection(minPos,
+							dest = WorldEditManager.offsetFacingDirection(minPos,
 									i * (blocksOffset + selection.widthZ()));
 							break;
 						default:
-							dest = WorldEditManager.offsetLookingDirection(minPos,
+							dest = WorldEditManager.offsetFacingDirection(minPos,
 									i * (blocksOffset + selection.widthX()));
 							break;
 					}

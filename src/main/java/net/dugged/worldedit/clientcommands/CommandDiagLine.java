@@ -45,7 +45,7 @@ public class CommandDiagLine extends ClientCommand {
 		}
 	}
 
-	private void generateDiagLine(World world, WorldEditSelection selection, BlockPos start,
+	private void generateDiagLine(World world, BlockPos start,
 								  IBlockState blockState) {
 		Map<BlockPos, IBlockState> blocksToPlace = new HashMap<>();
 		int y = start.getY();
@@ -58,7 +58,7 @@ public class CommandDiagLine extends ClientCommand {
 		if (useDiff) {
 			int initialDiff = start.getX() - start.getZ();
 			while (true) {
-				setBlocks(blockState, blocksToPlace, y, current);
+				setBlocks(blockState, blocksToPlace, current);
 				int currentDiff = current.getX() - current.getZ();
 				if (initialDiff < 0) {
 					if (currentDiff >= 0) {
@@ -77,7 +77,7 @@ public class CommandDiagLine extends ClientCommand {
 		} else {
 			int initialSum = start.getX() + start.getZ();
 			while (true) {
-				setBlocks(blockState, blocksToPlace, y, current);
+				setBlocks(blockState, blocksToPlace, current);
 				int currentSum = current.getX() + current.getZ();
 				if (initialSum < 0) {
 					if (currentSum >= 0) {
@@ -100,8 +100,7 @@ public class CommandDiagLine extends ClientCommand {
 		}
 	}
 
-	private void setBlocks(IBlockState blockState, Map<BlockPos, IBlockState> blocksToPlace, int y,
-						   BlockPos current) {
+	private void setBlocks(IBlockState blockState, Map<BlockPos, IBlockState> blocksToPlace, BlockPos current) {
 		for (int ox = -1; ox <= 1; ox++) {
 			for (int oy = -1; oy <= 1; oy++) {
 				BlockPos pos = new BlockPos(current.getX() + ox, current.getY() + oy,
@@ -129,7 +128,7 @@ public class CommandDiagLine extends ClientCommand {
 									: block.getDefaultState();
 					BlockPos start = selection.getPos(A);
 					Thread t = new Thread(
-							() -> generateDiagLine(world, selection, start, blockState));
+							() -> generateDiagLine(world, start, blockState));
 					t.start();
 					TaskManager.getInstance().threads.add(t);
 				} else {

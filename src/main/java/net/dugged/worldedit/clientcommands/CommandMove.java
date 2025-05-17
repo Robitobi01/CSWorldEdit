@@ -11,6 +11,9 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.World;
 
+import static net.dugged.worldedit.WorldEditSelection.Position.A;
+import static net.dugged.worldedit.WorldEditSelection.Position.B;
+
 public class CommandMove extends ClientCommand {
 
 	@Override
@@ -37,7 +40,7 @@ public class CommandMove extends ClientCommand {
 				}
 				BlockPos dstOrigin;
 				if (distance > 0) {
-					dstOrigin = WorldEditManager.offsetLookingDirection(selection.minPos(), distance);
+					dstOrigin = WorldEditManager.offsetFacingDirection(selection.minPos(), distance);
 				} else {
 					dstOrigin = WorldEditManager.playerPos();
 				}
@@ -47,6 +50,8 @@ public class CommandMove extends ClientCommand {
 				Thread t = new Thread(() -> TaskManager.getInstance().addTask(task));
 				t.start();
 				TaskManager.getInstance().threads.add(t);
+				selection.setPos(A, dstOrigin.add(selection.widthX() - 1, selection.widthY() - 1, selection.widthZ() - 1));
+				selection.setPos(B, dstOrigin);
 			} else {
 				WorldEditManager.sendMessage(new TextComponentTranslation(
 						"text.worldedit.move.usage"));

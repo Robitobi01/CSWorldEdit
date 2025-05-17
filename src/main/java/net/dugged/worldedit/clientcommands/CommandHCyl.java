@@ -35,7 +35,7 @@ public class CommandHCyl extends ClientCommand {
 				"text.worldedit.hcyl.usage").getUnformattedText();
 	}
 
-	private void generateHCyl(World world, WorldEditSelection selection, BlockPos center,
+	private void generateHCyl(World world, BlockPos center,
 							  IBlockState blockState, double radius, int height) {
 		if (height > world.getHeight() - center.getY()) {
 			height = world.getHeight() - center.getY();
@@ -112,7 +112,7 @@ public class CommandHCyl extends ClientCommand {
 					double radius = parseInt(args[2]) + 0.5;
 					int height = (args.length > 3) ? Math.max(1, parseInt(args[3])) : 1;
 					Thread t = new Thread(
-							() -> generateHCyl(world, selection, selection.getPos(A), blockState,
+							() -> generateHCyl(world, selection.getPos(A), blockState,
 									radius, height));
 					t.start();
 					TaskManager.getInstance().threads.add(t);

@@ -14,12 +14,10 @@ public class TaskReplaceItem extends TaskChunk {
 
 	public static boolean replaceItemPermission = false;
 	private final Map<ChunkPos, Queue<ReplaceItemOperation>> opsMap = new HashMap<>();
-	private final World world;
 	private final int totalOps;
 	private int processedOps = 0;
 
 	public TaskReplaceItem(Map<BlockPos, ItemStack> containers, World world) {
-		this.world = world;
 		for (Map.Entry<BlockPos, ItemStack> entry : containers.entrySet()) {
 			BlockPos pos = entry.getKey();
 			ItemStack stack = entry.getValue();

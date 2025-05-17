@@ -64,7 +64,6 @@ public class TaskClone extends TaskChunk {
 			} else {
 				y_iter_start = maxSrc.getY();
 				y_iter_end = minSrc.getY();
-				y_iter_step = -SUBCHUNK;
 			}
 			if (delta.getZ() > 0) {
 				z_iter_start = maxSrc.getZ();

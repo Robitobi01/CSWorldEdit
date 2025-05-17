@@ -35,12 +35,12 @@ public class TaskRenderer {
 			for (ChunkPos cpDest : task.getPendingChunks()) {
 				AxisAlignedBB bb = new AxisAlignedBB(cpDest.getXStart(), 0, cpDest.getZStart(), cpDest.getXEnd() + 1, mc.world.getHeight(), cpDest.getZEnd() + 1);
 				AxisAlignedBB offsetBB = bb.offset(-d1, -d2, -d3);
-				renderGlowingOutline(offsetBB, 1F, 0F, 0F, pulse);
+				renderGlowingOutline(offsetBB, 0F, pulse);
 			}
 
 			if (task instanceof TaskClone && !task.isComplete()) {
 				AxisAlignedBB offsetBB = ((TaskClone) task).getSourceRegion().offset(-d1, -d2, -d3);
-				renderGlowingOutline(offsetBB, 1F, 1F, 0F, 1);
+				renderGlowingOutline(offsetBB, 1F, 1);
 			}
 		}
 
@@ -51,23 +51,23 @@ public class TaskRenderer {
 		GlStateManager.enableTexture2D();
 	}
 
-	private static void renderGlowingOutline(AxisAlignedBB box, float r, float g, float b, float pulse) {
+	private static void renderGlowingOutline(AxisAlignedBB box, float g, float pulse) {
 		Tessellator tess = Tessellator.getInstance();
 		BufferBuilder buffer = tess.getBuffer();
 		GlStateManager.pushMatrix();
 		buffer.begin(3, DefaultVertexFormats.POSITION_COLOR);
-		buffer.pos(box.minX, box.minY, box.minZ).color(r, g, b, pulse).endVertex();
-		buffer.pos(box.maxX, box.minY, box.minZ).color(r, g, b, pulse).endVertex();
-		buffer.pos(box.maxX, box.minY, box.maxZ).color(r, g, b, pulse).endVertex();
-		buffer.pos(box.minX, box.minY, box.maxZ).color(r, g, b, pulse).endVertex();
-		buffer.pos(box.minX, box.minY, box.minZ).color(r, g, b, pulse).endVertex();
+		buffer.pos(box.minX, box.minY, box.minZ).color((float) 1.0, g, (float) 0.0, pulse).endVertex();
+		buffer.pos(box.maxX, box.minY, box.minZ).color((float) 1.0, g, (float) 0.0, pulse).endVertex();
+		buffer.pos(box.maxX, box.minY, box.maxZ).color((float) 1.0, g, (float) 0.0, pulse).endVertex();
+		buffer.pos(box.minX, box.minY, box.maxZ).color((float) 1.0, g, (float) 0.0, pulse).endVertex();
+		buffer.pos(box.minX, box.minY, box.minZ).color((float) 1.0, g, (float) 0.0, pulse).endVertex();
 		tess.draw();
 		buffer.begin(3, DefaultVertexFormats.POSITION_COLOR);
-		buffer.pos(box.minX, box.maxY, box.minZ).color(r, g, b, pulse).endVertex();
-		buffer.pos(box.maxX, box.maxY, box.minZ).color(r, g, b, pulse).endVertex();
-		buffer.pos(box.maxX, box.maxY, box.maxZ).color(r, g, b, pulse).endVertex();
-		buffer.pos(box.minX, box.maxY, box.maxZ).color(r, g, b, pulse).endVertex();
-		buffer.pos(box.minX, box.maxY, box.minZ).color(r, g, b, pulse).endVertex();
+		buffer.pos(box.minX, box.maxY, box.minZ).color((float) 1.0, g, (float) 0.0, pulse).endVertex();
+		buffer.pos(box.maxX, box.maxY, box.minZ).color((float) 1.0, g, (float) 0.0, pulse).endVertex();
+		buffer.pos(box.maxX, box.maxY, box.maxZ).color((float) 1.0, g, (float) 0.0, pulse).endVertex();
+		buffer.pos(box.minX, box.maxY, box.maxZ).color((float) 1.0, g, (float) 0.0, pulse).endVertex();
+		buffer.pos(box.minX, box.maxY, box.minZ).color((float) 1.0, g, (float) 0.0, pulse).endVertex();
 		tess.draw();
 		GlStateManager.popMatrix();
 	}

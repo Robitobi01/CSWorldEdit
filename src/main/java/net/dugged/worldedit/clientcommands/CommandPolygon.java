@@ -72,7 +72,7 @@ public class CommandPolygon extends ClientCommand {
 		return vertices;
 	}
 
-	private void generatePolygon(World world, WorldEditSelection selection, BlockPos center,
+	private void generatePolygon(World world, BlockPos center,
 								 IBlockState blockState, int radius, int points, boolean halfStep) {
 		List<BlockPos> vertices = generateVertices(center, radius, points, halfStep);
 		Map<BlockPos, IBlockState> blocksToPlace = new HashMap<>();
@@ -102,7 +102,7 @@ public class CommandPolygon extends ClientCommand {
 					int points = parseInt(args[3]);
 					boolean halfStep = args.length == 5 && parseBoolean(args[4]);
 					Thread t = new Thread(() ->
-							generatePolygon(world, selection, selection.getPos(A), blockState, radius,
+							generatePolygon(world, selection.getPos(A), blockState, radius,
 									points, halfStep)
 					);
 					t.start();

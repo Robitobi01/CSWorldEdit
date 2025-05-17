@@ -2,7 +2,6 @@ package net.dugged.worldedit.clientcommands;
 
 import net.dugged.worldedit.WorldEditManager;
 import net.dugged.worldedit.WorldEditSelection;
-import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.TextComponentTranslation;
@@ -28,8 +27,7 @@ public class CommandSize extends ClientCommand {
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args)
-			throws CommandException {
+	public void execute(MinecraftServer server, ICommandSender sender, String[] args) {
 		if (args.length == 0) {
 			if (WorldEditManager.hasCurrentSelection()) {
 				WorldEditSelection selection = WorldEditManager.getCurrentSelection();

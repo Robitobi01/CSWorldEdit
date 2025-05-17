@@ -1,20 +1,18 @@
 {
-	"package": "net.dugged.worldedit.mixins",
-	"required": true,
-	"refmap": "mixins.worldedit.refmap.json",
-	"target": "@env(DEFAULT)",
-	"minVersion": "0.8.5",
-	"compatibilityLevel": "JAVA_8",
-	"mixins": [
-		"IItemSword",
-		"IKeybinding",
-		"MixinEntityRenderer",
-		"MixinGuiBossOverlay",
-		"MixinGuiScreen",
-		"MixinMinecraft",
-		"MixinNetHandlerPlayClient",
-		"MixinTabCompleter"
-	],
-	"server": [],
-	"client": []
+  "package": "net.dugged.worldedit.mixins",
+  "required": true,
+  "refmap": "mixins.worldedit.refmap.json",
+  "target": "@env(DEFAULT)",
+  "minVersion": "0.8.5",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "IItemSword",
+    "MixinGuiBossOverlay",
+    "MixinGuiScreen",
+    "MixinMinecraft",
+    "MixinNetHandlerPlayClient",
+    "MixinTabCompleter"
+  ],
+  "server": [],
+  "client": []
 }

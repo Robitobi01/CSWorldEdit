@@ -5,7 +5,6 @@ import net.dugged.worldedit.WorldEditSelection;
 import net.dugged.worldedit.tasks.TaskManager;
 import net.dugged.worldedit.tasks.TaskSetBlock;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.EnumFacing;
@@ -30,7 +29,7 @@ public class CommandFlip extends ClientCommand {
 	}
 
 	private void flipSelection(World world, WorldEditSelection selection) {
-		EnumFacing direction = WorldEditManager.getLookingDirection();
+		EnumFacing direction = WorldEditManager.getFacingDirection();
 		Map<BlockPos, IBlockState> blockList = new HashMap<>();
 		for (int x = 0; x < selection.widthX(); x++) {
 			for (int y = 0; y < selection.widthY(); y++) {
@@ -57,8 +56,7 @@ public class CommandFlip extends ClientCommand {
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args)
-			throws CommandException {
+	public void execute(MinecraftServer server, ICommandSender sender, String[] args) {
 		if (args.length == 0) {
 			if (WorldEditManager.hasCurrentSelection()) {
 				WorldEditSelection selection = WorldEditManager.getCurrentSelection();

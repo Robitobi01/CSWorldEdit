@@ -1,7 +1,6 @@
 package net.dugged.worldedit.clientcommands;
 
 import net.dugged.worldedit.WorldEditManager;
-import net.dugged.worldedit.WorldEditRenderer;
 import net.dugged.worldedit.tasks.TaskManager;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockAir;

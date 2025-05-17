@@ -18,8 +18,6 @@ public abstract class BrushBase {
 
 	private IBlockState blockState;
 
-	private int radius;
-
 	public abstract String getName();
 
 	public abstract ArrayList<BlockPos> run(World world, BlockPos pos);
@@ -40,12 +38,7 @@ public abstract class BrushBase {
 		this.blockState = blockState;
 	}
 
-	public int getRadius() {
-		return radius;
-	}
-
 	public void setRadius(int radius) {
-		this.radius = radius;
 	}
 
 	public void execute(World world, BlockPos pos) {

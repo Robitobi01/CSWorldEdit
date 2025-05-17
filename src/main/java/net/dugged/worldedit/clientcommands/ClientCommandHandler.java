@@ -1,7 +1,7 @@
 package net.dugged.worldedit.clientcommands;
 
+import net.dugged.worldedit.WorldEdit;
 import net.dugged.worldedit.WorldEditManager;
-import net.dugged.worldedit.WorldEditRenderer;
 import net.dugged.worldedit.brushes.BrushIceSpike;
 import net.dugged.worldedit.brushes.BrushPerimeterWall;
 import net.dugged.worldedit.brushes.BrushPlaceTop;
@@ -14,7 +14,6 @@ import net.minecraft.command.ICommand;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.network.play.client.CPacketTabComplete;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.util.text.TextFormatting;
 
@@ -26,11 +25,10 @@ import static net.minecraft.util.text.TextFormatting.RESET;
 
 public class ClientCommandHandler extends CommandHandler {
 
+	public static final int PACKET_LIMIT = 5000;
 	private static final ClientCommandHandler instance = new ClientCommandHandler();
-	public static int PACKET_LIMIT = 5000;
 	private final Minecraft mc = Minecraft.getMinecraft();
 	public String[] latestAutoComplete = null;
-	private long tick = 0;
 
 	public static ClientCommandHandler getInstance() {
 		return instance;
@@ -161,26 +159,9 @@ public class ClientCommandHandler extends CommandHandler {
 		if (mc.world == null) {
 			return;
 		}
-		if (tick % 36000 == 0 && !mc.ingameGUI.getChatGUI().getChatOpen()) {
+		if (WorldEdit.tickCounter % 36000 == 0 && !mc.ingameGUI.getChatGUI().getChatOpen()) {
 			updatePermissions();
 		}
 		TaskManager.getInstance().tick();
-		WorldEditRenderer.update();
-		tick++;
-	}
-
-	public static class PlayerPos {
-
-		public BlockPos position;
-		public int dimension;
-
-		PlayerPos(BlockPos pos, int dim) {
-			update(pos, dim);
-		}
-
-		public void update(BlockPos pos, int dim) {
-			dimension = dim;
-			position = pos;
-		}
 	}
 }

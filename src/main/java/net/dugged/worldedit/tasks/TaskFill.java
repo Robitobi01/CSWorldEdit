@@ -16,12 +16,10 @@ public class TaskFill extends TaskChunk {
 	private static final int SUBCHUNK = 16;
 	public static boolean fillPermission = false;
 	private final Map<ChunkPos, Queue<FillOperation>> opsMap = new HashMap<>();
-	private final World world;
 	private final int totalOps;
 	private int processedOps = 0;
 
 	public TaskFill(BlockPos pos1, BlockPos pos2, IBlockState state, World world) {
-		this.world = world;
 		BlockPos minPos = getMinPos(pos1, pos2);
 		BlockPos maxPos = getMaxPos(pos1, pos2);
 		Map<BlockPos, IBlockState> undoData = UndoRecorder.recordRegion(minPos, maxPos, world);
@@ -42,7 +40,6 @@ public class TaskFill extends TaskChunk {
 	}
 
 	public TaskFill(Map<AxisAlignedBB, IBlockState> regionMap, World world) {
-		this.world = world;
 		Map<BlockPos, IBlockState> undoData = new HashMap<>();
 		for (Map.Entry<AxisAlignedBB, IBlockState> entry : regionMap.entrySet()) {
 			AxisAlignedBB bb = entry.getKey();
@@ -76,7 +73,7 @@ public class TaskFill extends TaskChunk {
 		}
 		while (count < maxPackets && !queue.isEmpty()) {
 			FillOperation op = queue.poll();
-			String name = op.state.getBlock().getRegistryName().toString();
+			String name = Objects.requireNonNull(op.state.getBlock().getRegistryName()).toString();
 			int meta = op.state.getBlock().getMetaFromState(op.state);
 			String cmd = String.format("/fill %d %d %d %d %d %d %s %d", op.x1, op.y1, op.z1, op.x2,
 					op.y2, op.z2, name, meta);

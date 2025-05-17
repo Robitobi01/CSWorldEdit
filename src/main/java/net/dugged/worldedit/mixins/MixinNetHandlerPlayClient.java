@@ -29,7 +29,7 @@ public class MixinNetHandlerPlayClient {
 	}
 
 	@Unique
-	private boolean contains(String[] matches, String word) {
+	private boolean worldEdit$contains(String[] matches, String word) {
 		for (String s : matches) {
 			if (s.contains(word)) {
 				return true;
@@ -40,15 +40,15 @@ public class MixinNetHandlerPlayClient {
 
 	@Inject(method = "handleTabComplete", at = @At(value = "INVOKE", target = START_OF_PACKET, shift = At.Shift.AFTER))
 	private void onHandleTabComplete(SPacketTabComplete packetIn, CallbackInfo ci) {
-		if (contains(packetIn.getMatches(), "setblock")) {
+		if (worldEdit$contains(packetIn.getMatches(), "setblock")) {
 			TaskSetBlock.setblockPermission = true;
-		} else if (contains(packetIn.getMatches(), "fill")) {
+		} else if (worldEdit$contains(packetIn.getMatches(), "fill")) {
 			TaskFill.fillPermission = true;
-		} else if (contains(packetIn.getMatches(), "clone")) {
+		} else if (worldEdit$contains(packetIn.getMatches(), "clone")) {
 			TaskClone.clonePermission = true;
-		} else if (contains(packetIn.getMatches(), "replaceitem")) {
+		} else if (worldEdit$contains(packetIn.getMatches(), "replaceitem")) {
 			TaskReplaceItem.replaceItemPermission = true;
-		} else if (contains(packetIn.getMatches(), "gamerule")) {
+		} else if (worldEdit$contains(packetIn.getMatches(), "gamerule")) {
 			TaskManager.gamerulePermission = true;
 		}
 	}

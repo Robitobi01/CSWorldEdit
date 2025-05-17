@@ -44,7 +44,7 @@ public class CommandWalls extends ClientCommand {
 				if (args.length >= 2) {
 					blockState = convertArgToBlockState(block, args[1]);
 				}
-				if (args.length >= 3) {
+				if (args.length == 3) {
 					thickness = parseInt(args[2]) - 1;
 					if (thickness <= 0) {
 						thickness = 0;
