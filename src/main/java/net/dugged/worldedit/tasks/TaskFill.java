@@ -15,7 +15,7 @@ public class TaskFill extends TaskChunk {
 
 	private static final int SUBCHUNK = 16;
 	public static boolean fillPermission = false;
-	private final Map<ChunkPos, Queue<CubeOperation>> opsMap = new HashMap<>();
+	private final Map<ChunkPos, Queue<FillOperation>> opsMap = new HashMap<>();
 	private final World world;
 	private final int totalOps;
 	private int processedOps = 0;
@@ -32,7 +32,7 @@ public class TaskFill extends TaskChunk {
 				int ey = Math.min(y + SUBCHUNK - 1, maxPos.getY());
 				for (int z = minPos.getZ(); z <= maxPos.getZ(); z += SUBCHUNK) {
 					int ez = Math.min(z + SUBCHUNK - 1, maxPos.getZ());
-					CubeOperation op = new CubeOperation(x, y, z, ex, ey, ez, state);
+					FillOperation op = new FillOperation(x, y, z, ex, ey, ez, state);
 					ChunkPos cp = new ChunkPos(new BlockPos(x, 0, z));
 					opsMap.computeIfAbsent(cp, k -> new LinkedList<>()).offer(op);
 				}
@@ -56,7 +56,7 @@ public class TaskFill extends TaskChunk {
 					int ey = Math.min(y + SUBCHUNK - 1, (int) bb.maxY);
 					for (int z = (int) bb.minZ; z <= (int) bb.maxZ; z += SUBCHUNK) {
 						int ez = Math.min(z + SUBCHUNK - 1, (int) bb.maxZ);
-						CubeOperation op = new CubeOperation(x, y, z, ex, ey, ez, stateForRegion);
+						FillOperation op = new FillOperation(x, y, z, ex, ey, ez, stateForRegion);
 						ChunkPos cp = new ChunkPos(new BlockPos(x, 0, z));
 						opsMap.computeIfAbsent(cp, k -> new LinkedList<>()).offer(op);
 					}
@@ -70,12 +70,12 @@ public class TaskFill extends TaskChunk {
 	@Override
 	public int processChunk(ChunkPos pos, int maxPackets) {
 		int count = 0;
-		Queue<CubeOperation> queue = opsMap.get(pos);
+		Queue<FillOperation> queue = opsMap.get(pos);
 		if (queue == null || !fillPermission) {
 			return 0;
 		}
 		while (count < maxPackets && !queue.isEmpty()) {
-			CubeOperation op = queue.poll();
+			FillOperation op = queue.poll();
 			String name = op.state.getBlock().getRegistryName().toString();
 			int meta = op.state.getBlock().getMetaFromState(op.state);
 			String cmd = String.format("/fill %d %d %d %d %d %d %s %d", op.x1, op.y1, op.z1, op.x2,
@@ -110,12 +110,12 @@ public class TaskFill extends TaskChunk {
 		return opsMap.isEmpty();
 	}
 
-	public static class CubeOperation {
+	public static class FillOperation {
 
 		public final int x1, y1, z1, x2, y2, z2;
 		public final IBlockState state;
 
-		public CubeOperation(int x1, int y1, int z1, int x2, int y2, int z2, IBlockState state) {
+		public FillOperation(int x1, int y1, int z1, int x2, int y2, int z2, IBlockState state) {
 			this.x1 = x1;
 			this.y1 = y1;
 			this.z1 = z1;

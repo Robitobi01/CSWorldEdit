@@ -1,5 +1,6 @@
 package net.dugged.worldedit.tasks;
 
+import net.dugged.worldedit.Configuration;
 import net.dugged.worldedit.clientcommands.ClientCommandHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.play.client.CPacketChatMessage;
@@ -8,9 +9,7 @@ import net.minecraft.util.math.ChunkPos;
 import java.util.*;
 
 public class TaskManager {
-
 	private static final TaskManager instance = new TaskManager();
-	private static final int OPERATION_RANGE = 4;
 	public static boolean gamerulePermission = false;
 	public final List<Thread> threads = new LinkedList<>();
 	private final List<TaskChunk> tasks = new LinkedList<>();
@@ -45,12 +44,24 @@ public class TaskManager {
 			return false;
 		}
 		ChunkPos playerChunk = new ChunkPos(mc.player.getPosition());
-		int range = 2;
+
 		for (TaskChunk task : tasks) {
-			for (ChunkPos cp : new HashSet<>(task.getPendingChunks())) {
-				if (Math.abs(cp.x - playerChunk.x) > range
-						|| Math.abs(cp.z - playerChunk.z) > range) {
-					return true;
+			if (task instanceof TaskClone && ((TaskClone) task).isOverlapSensitive()) {
+				TaskClone cloneTask = (TaskClone) task;
+				List<ChunkPos> orderedChunks = cloneTask.getOrderedDestinationChunks();
+				for (ChunkPos cpNext : orderedChunks) {
+					if (cloneTask.getPendingChunks().contains(cpNext)) {
+						if (Math.abs(cpNext.x - playerChunk.x) > Configuration.operationRange || Math.abs(cpNext.z - playerChunk.z) > Configuration.operationRange) {
+							return true;
+						}
+						break;
+					}
+				}
+			} else {
+				for (ChunkPos cp : new HashSet<>(task.getPendingChunks())) {
+					if (Math.abs(cp.x - playerChunk.x) > Configuration.operationRange || Math.abs(cp.z - playerChunk.z) > Configuration.operationRange) {
+						return true;
+					}
 				}
 			}
 		}
@@ -69,48 +80,75 @@ public class TaskManager {
 		currentlyProcessing.clear();
 		int packetsThisTick = 0;
 		Minecraft mc = Minecraft.getMinecraft();
+		if (mc.player == null || mc.world == null) return;
 		ChunkPos playerChunk = new ChunkPos(mc.player.getPosition());
-		Iterator<TaskChunk> it = tasks.iterator();
-		if (!processing && (it.hasNext() && packetsThisTick < ClientCommandHandler.PACKET_LIMIT)) {
-			processing = true;
+
+		boolean wasProcessing = processing;
+		processing = !tasks.isEmpty();
+
+		if (processing && !wasProcessing) {
 			if (gamerulePermission) {
-				mc.player.connection.sendPacket(
-						new CPacketChatMessage("/gamerule sendCommandFeedback false"));
-				mc.player.connection.sendPacket(
-						new CPacketChatMessage("/gamerule logAdminCommands false"));
-				mc.player.connection.sendPacket(
-						new CPacketChatMessage("/gamerule doTileDrops false"));
-			}
-		} else if (processing && !(it.hasNext()
-				&& packetsThisTick < ClientCommandHandler.PACKET_LIMIT)) {
-			processing = false;
-			if (gamerulePermission) {
-				mc.player.connection.sendPacket(
-						new CPacketChatMessage("/gamerule doTileDrops true"));
-				mc.player.connection.sendPacket(
-						new CPacketChatMessage("/gamerule logAdminCommands true"));
-				mc.player.connection.sendPacket(
-						new CPacketChatMessage("/gamerule sendCommandFeedback true"));
+				mc.player.connection.sendPacket(new CPacketChatMessage("/gamerule sendCommandFeedback false"));
+				mc.player.connection.sendPacket(new CPacketChatMessage("/gamerule logAdminCommands false"));
+				mc.player.connection.sendPacket(new CPacketChatMessage("/gamerule doTileDrops false"));
 			}
 		}
-		while (it.hasNext() && packetsThisTick < ClientCommandHandler.PACKET_LIMIT) {
-			TaskChunk task = it.next();
-			for (ChunkPos cp : new HashSet<>(task.getPendingChunks())) {
-				if (Math.abs(cp.x - playerChunk.x) <= OPERATION_RANGE
-						&& Math.abs(cp.z - playerChunk.z) <= OPERATION_RANGE) {
-					int processed = task.processChunk(cp,
-							ClientCommandHandler.PACKET_LIMIT - packetsThisTick);
-					if (processed > 0) {
-						currentlyProcessing.add(cp);
-					}
-					packetsThisTick += processed;
-					if (packetsThisTick >= ClientCommandHandler.PACKET_LIMIT) {
+
+		Iterator<TaskChunk> taskIterator = tasks.iterator();
+		while (taskIterator.hasNext() && packetsThisTick < ClientCommandHandler.PACKET_LIMIT) {
+			TaskChunk task = taskIterator.next();
+
+			if (task instanceof TaskClone && ((TaskClone) task).isOverlapSensitive()) {
+				TaskClone cloneTask = (TaskClone) task;
+				List<ChunkPos> orderedChunks = cloneTask.getOrderedDestinationChunks();
+				ChunkPos nextChunkToProcessInOrder = null;
+
+				for (ChunkPos orderedCp : orderedChunks) {
+					if (cloneTask.getPendingChunks().contains(orderedCp)) {
+						nextChunkToProcessInOrder = orderedCp;
 						break;
 					}
 				}
+
+				if (nextChunkToProcessInOrder != null) {
+					if (Math.abs(nextChunkToProcessInOrder.x - playerChunk.x) <= Configuration.operationRange &&
+							Math.abs(nextChunkToProcessInOrder.z - playerChunk.z) <= Configuration.operationRange) {
+
+						int processedInChunk = cloneTask.processChunk(nextChunkToProcessInOrder, ClientCommandHandler.PACKET_LIMIT - packetsThisTick);
+						if (processedInChunk > 0) {
+							currentlyProcessing.add(nextChunkToProcessInOrder);
+							packetsThisTick += processedInChunk;
+						}
+					}
+				}
+			} else {
+				List<ChunkPos> pending = new ArrayList<>(task.getPendingChunks());
+				for (ChunkPos cpToProcess : pending) {
+					if (packetsThisTick >= ClientCommandHandler.PACKET_LIMIT) {
+						break;
+					}
+					if (Math.abs(cpToProcess.x - playerChunk.x) <= Configuration.operationRange &&
+							Math.abs(cpToProcess.z - playerChunk.z) <= Configuration.operationRange) {
+						int processedInChunk = task.processChunk(cpToProcess, ClientCommandHandler.PACKET_LIMIT - packetsThisTick);
+						if (processedInChunk > 0) {
+							currentlyProcessing.add(cpToProcess);
+							packetsThisTick += processedInChunk;
+						}
+					}
+				}
 			}
+
 			if (task.isComplete()) {
-				it.remove();
+				taskIterator.remove();
+			}
+		}
+
+		if (wasProcessing && tasks.isEmpty()) {
+			processing = false;
+			if (gamerulePermission) {
+				mc.player.connection.sendPacket(new CPacketChatMessage("/gamerule doTileDrops true"));
+				mc.player.connection.sendPacket(new CPacketChatMessage("/gamerule logAdminCommands true"));
+				mc.player.connection.sendPacket(new CPacketChatMessage("/gamerule sendCommandFeedback true"));
 			}
 		}
 		threads.removeIf(thread -> thread.isInterrupted() || !thread.isAlive());
