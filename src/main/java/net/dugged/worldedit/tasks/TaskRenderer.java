@@ -33,7 +33,8 @@ public class TaskRenderer {
 
 		for (TaskChunk task : TaskManager.getInstance().getTasks()) {
 			for (ChunkPos cpDest : task.getPendingChunks()) {
-				AxisAlignedBB bb = new AxisAlignedBB(cpDest.getXStart(), 0, cpDest.getZStart(), cpDest.getXEnd() + 1, mc.world.getHeight(), cpDest.getZEnd() + 1);
+				AxisAlignedBB bb = new AxisAlignedBB(cpDest.getXStart(), 0, cpDest.getZStart(), cpDest.getXEnd() + 1,
+						mc.world.getHeight(), cpDest.getZEnd() + 1);
 				AxisAlignedBB offsetBB = bb.offset(-d1, -d2, -d3);
 				renderGlowingOutline(offsetBB, 0F, pulse);
 			}

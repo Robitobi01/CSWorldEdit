@@ -51,8 +51,7 @@ public class BrushPerimeterWall extends BrushBase {
 		posList.add(pos.south().east());
 		posList.add(pos.south().west());
 		for (BlockPos pos1 : posList) {
-			if (world.getBlockState(pos1).getMaterial() != Material.AIR
-					&& world.getBlockState(pos1).getBlock() != getBlockState().getBlock()) {
+			if (world.getBlockState(pos1).getMaterial() != Material.AIR && world.getBlockState(pos1).getBlock() != getBlockState().getBlock()) {
 				return false;
 			}
 		}

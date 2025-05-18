@@ -22,8 +22,7 @@ public class CommandSize extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return new TextComponentTranslation(
-				"text.worldedit.size.usage").getUnformattedText();
+		return new TextComponentTranslation("text.worldedit.size.usage").getUnformattedText();
 	}
 
 	@Override
@@ -31,15 +30,12 @@ public class CommandSize extends ClientCommand {
 		if (args.length == 0) {
 			if (WorldEditManager.hasCurrentSelection()) {
 				WorldEditSelection selection = WorldEditManager.getCurrentSelection();
-				WorldEditManager.sendMessage(new TextComponentTranslation(
-						"text.worldedit.size.response",
-						selection.getPos(A).getX(), selection.getPos(A).getY(),
-						selection.getPos(A).getZ(), selection.getPos(B).getX(),
-						selection.getPos(B).getY(), selection.getPos(B).getZ(), selection.widthX(),
-						selection.widthY(), selection.widthZ(), selection.volume()));
+				WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.size.response",
+						selection.getPos(A).getX(), selection.getPos(A).getY(), selection.getPos(A).getZ(),
+						selection.getPos(B).getX(), selection.getPos(B).getY(), selection.getPos(B).getZ(),
+						selection.widthX(), selection.widthY(), selection.widthZ(), selection.volume()));
 			} else {
-				WorldEditManager.sendMessage(new TextComponentTranslation(
-						"text.worldedit.noAreaSelected"));
+				WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.noAreaSelected"));
 			}
 		} else {
 			WorldEditManager.sendMessage(getUsage(sender));

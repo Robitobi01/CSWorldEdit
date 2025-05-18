@@ -15,18 +15,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class MixinNetHandlerPlayClient {
 
 	@Unique
-	private static final String START_OF_PACKET = "Lnet/minecraft/network/PacketThreadUtil;checkThreadAndEnqueue(Lnet/minecraft/network/Packet;Lnet/minecraft/network/INetHandler;Lnet/minecraft/util/IThreadListener;)V";
+	private static final String START_OF_PACKET = "Lnet/minecraft/network/PacketThreadUtil;checkThreadAndEnqueue" +
+			"(Lnet/minecraft/network/Packet;Lnet/minecraft/network/INetHandler;Lnet/minecraft/util/IThreadListener;)V";
 
-	@Inject(method = "handleChat", at = @At(value = "INVOKE", target = START_OF_PACKET, shift = At.Shift.AFTER), cancellable = true)
+	@Inject(method = "handleChat", at = @At(value = "INVOKE", target = START_OF_PACKET, shift = At.Shift.AFTER),
+			cancellable = true)
 	private void onHandleChat(SPacketChat packet, CallbackInfo ci) {
 		if (!Configuration.enabled) {
 			return;
 		}
 		if (packet.isSystem()) {
 			final String chatLine = packet.getChatComponent().getUnformattedText();
-			if (TaskManager.getInstance().isActive() && (
-					chatLine.contains("The block couldn't be placed") || chatLine.contains(
-							"Block placed") || chatLine.contains("No blocks filled"))) {
+			if (TaskManager.getInstance().isActive() && (chatLine.contains("The block couldn't be placed") || chatLine.contains("Block placed") || chatLine.contains("No blocks filled"))) {
 				ci.cancel();
 			}
 		}

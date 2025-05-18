@@ -27,13 +27,11 @@ public class CommandStackDiagonal extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return new TextComponentTranslation(
-				"text.worldedit.stackdiagonal.usage").getUnformattedText();
+		return new TextComponentTranslation("text.worldedit.stackdiagonal.usage").getUnformattedText();
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args)
-			throws CommandException {
+	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		if (WorldEditManager.hasCurrentSelection()) {
 			WorldEditSelection selection = WorldEditManager.getCurrentSelection();
 			if (args.length >= 4 && args.length <= 6) {
@@ -65,27 +63,23 @@ public class CommandStackDiagonal extends ClientCommand {
 					endPos = dest.add(selection.widthX(), selection.widthY(), selection.widthZ());
 				}
 				if (moveSelection) {
-					selection.setPos(A,
-							new BlockPos(Math.min(minPos.getX(), endPos.getX() - selection.widthX()),
-									Math.min(minPos.getY(), endPos.getY() - selection.widthY()),
-									Math.min(minPos.getZ(), endPos.getZ() - selection.widthZ())));
-					selection.setPos(B, new BlockPos(Math.max(maxPos.getX(), endPos.getX()),
-							Math.max(maxPos.getY(), endPos.getY()),
-							Math.max(maxPos.getZ(), endPos.getZ())));
+					selection.setPos(A, new BlockPos(Math.min(minPos.getX(), endPos.getX() - selection.widthX()),
+							Math.min(minPos.getY(), endPos.getY() - selection.widthY()), Math.min(minPos.getZ(),
+							endPos.getZ() - selection.widthZ())));
+					selection.setPos(B, new BlockPos(Math.max(maxPos.getX(), endPos.getX()), Math.max(maxPos.getY(),
+							endPos.getY()), Math.max(maxPos.getZ(), endPos.getZ())));
 				}
 			} else {
-				WorldEditManager.sendMessage(new TextComponentTranslation(
-						"text.worldedit.stackdiagonal.usage"));
+				WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.stackdiagonal.usage"));
 			}
 		} else {
-			WorldEditManager.sendMessage(new TextComponentTranslation(
-					"text.worldedit.noAreaSelected"));
+			WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.noAreaSelected"));
 		}
 	}
 
 	@Override
-	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender,
-										  String[] args, @Nullable BlockPos pos) {
+	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args,
+										  @Nullable BlockPos pos) {
 		if (args.length == 5 || args.length == 6) {
 			return getListOfStringsMatchingLastWord(args, "true", "false");
 		}

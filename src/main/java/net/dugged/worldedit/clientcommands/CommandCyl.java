@@ -31,12 +31,10 @@ public class CommandCyl extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return new TextComponentTranslation(
-				"text.worldedit.cyl.usage").getUnformattedText();
+		return new TextComponentTranslation("text.worldedit.cyl.usage").getUnformattedText();
 	}
 
-	private void generateCyl(World world, BlockPos center,
-							 IBlockState blockState, double radius, int height) {
+	private void generateCyl(World world, BlockPos center, IBlockState blockState, double radius, int height) {
 		if (height > world.getHeight() - center.getY()) {
 			height = world.getHeight() - center.getY();
 		}
@@ -49,16 +47,14 @@ public class CommandCyl extends ClientCommand {
 				if (WorldEditManager.checkCircle(x, z, radius)) {
 					if (!WorldEditManager.checkCircle(x + 1, z, radius) || !WorldEditManager.checkCircle(x, z + 1,
 							radius)) {
-						BlockPos pos1 = new BlockPos(center.getX() + (int) x, center.getY(),
-								center.getZ() - (int) z);
-						BlockPos pos2 = new BlockPos(center.getX() + (int) x,
-								center.getY() + height - 1, center.getZ() + (int) z);
+						BlockPos pos1 = new BlockPos(center.getX() + (int) x, center.getY(), center.getZ() - (int) z);
+						BlockPos pos2 = new BlockPos(center.getX() + (int) x, center.getY() + height - 1,
+								center.getZ() + (int) z);
 						AxisAlignedBB box1 = new AxisAlignedBB(pos1, pos2.add(1, 1, 1));
 						regionMap.put(box1, blockState);
-						BlockPos pos3 = new BlockPos(center.getX() - (int) x, center.getY(),
-								center.getZ() - (int) z);
-						BlockPos pos4 = new BlockPos(center.getX() - (int) x,
-								center.getY() + height - 1, center.getZ() + (int) z);
+						BlockPos pos3 = new BlockPos(center.getX() - (int) x, center.getY(), center.getZ() - (int) z);
+						BlockPos pos4 = new BlockPos(center.getX() - (int) x, center.getY() + height - 1,
+								center.getZ() + (int) z);
 						AxisAlignedBB box2 = new AxisAlignedBB(pos3, pos4.add(1, 1, 1));
 						regionMap.put(box2, blockState);
 					}
@@ -70,8 +66,7 @@ public class CommandCyl extends ClientCommand {
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args)
-			throws CommandException {
+	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		if (args.length >= 3 && args.length <= 4) {
 			if (WorldEditManager.hasCurrentSelection()) {
 				WorldEditSelection selection = WorldEditManager.getCurrentSelection();
@@ -86,26 +81,22 @@ public class CommandCyl extends ClientCommand {
 					} else {
 						height = 1;
 					}
-					Thread t = new Thread(
-							() -> generateCyl(world, selection.getPos(A), blockState, radius,
-									height));
+					Thread t = new Thread(() -> generateCyl(world, selection.getPos(A), blockState, radius, height));
 					t.start();
 					TaskManager.getInstance().threads.add(t);
 				} else {
-					WorldEditManager.sendMessage(new TextComponentTranslation(
-							"text.worldedit.noOneByOneSelected"));
+					WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.noOneByOneSelected"));
 				}
 			} else {
-				WorldEditManager.sendMessage(new TextComponentTranslation(
-						"text.worldedit.noAreaSelected"));
+				WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.noAreaSelected"));
 			}
 		} else {
 			WorldEditManager.sendMessage(getUsage(sender));
 		}
 	}
 
-	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender,
-										  String[] args, @Nullable BlockPos pos) {
+	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args,
+										  @Nullable BlockPos pos) {
 		if (args.length == 1) {
 			return getListOfStringsMatchingLastWord(args, Block.REGISTRY.getKeys());
 		} else {

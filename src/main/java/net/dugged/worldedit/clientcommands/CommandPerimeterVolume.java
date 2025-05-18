@@ -31,16 +31,12 @@ public class CommandPerimeterVolume extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return new TextComponentTranslation(
-				"text.worldedit.perimetervolume.usage").getUnformattedText();
+		return new TextComponentTranslation("text.worldedit.perimetervolume.usage").getUnformattedText();
 	}
 
 	private void checkNeighbor(World world, BlockPos startPos, int radius, BlockPos neighbor,
 							   List<BlockPos> blocksToCheck, List<BlockPos> checkedBlocks) {
-		if (world.isBlockLoaded(neighbor)
-				&& world.getBlockState(neighbor).getBlock() instanceof BlockAir
-				&& WorldEditManager.checkCircle(neighbor.getX() - startPos.getX(),
-				neighbor.getZ() - startPos.getZ(), radius)) {
+		if (world.isBlockLoaded(neighbor) && world.getBlockState(neighbor).getBlock() instanceof BlockAir && WorldEditManager.checkCircle(neighbor.getX() - startPos.getX(), neighbor.getZ() - startPos.getZ(), radius)) {
 			if (!checkedBlocks.contains(neighbor)) {
 				blocksToCheck.add(neighbor);
 				checkedBlocks.add(neighbor);
@@ -73,13 +69,11 @@ public class CommandPerimeterVolume extends ClientCommand {
 			}
 			blocksToCheck.remove(0);
 		}
-		WorldEditManager.sendMessage(new TextComponentTranslation(
-				"text.worldedit.perimetervolume.response", count));
+		WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.perimetervolume.response", count));
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args)
-			throws CommandException {
+	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		if (args.length == 0 || args.length == 1 || args.length == 2) {
 			World world = sender.getEntityWorld();
 			BlockPos pos = WorldEditManager.playerPos();
@@ -90,18 +84,16 @@ public class CommandPerimeterVolume extends ClientCommand {
 				t.start();
 				TaskManager.getInstance().threads.add(t);
 			} else {
-				WorldEditManager.sendMessage(new TextComponentTranslation(
-						"text.worldedit.floodfill.noSpaceToFlood"));
+				WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.floodfill.noSpaceToFlood"));
 			}
 		} else {
-			WorldEditManager.sendMessage(new TextComponentTranslation(
-					"text.worldedit.perimetervolume.usage"));
+			WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.perimetervolume.usage"));
 		}
 	}
 
 	@Override
-	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender,
-										  String[] args, @Nullable BlockPos pos) {
+	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args,
+										  @Nullable BlockPos pos) {
 		if (args.length == 1) {
 			return getListOfStringsMatchingLastWord(args, Block.REGISTRY.getKeys());
 		} else {

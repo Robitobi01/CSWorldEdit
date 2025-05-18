@@ -14,12 +14,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(TabCompleter.class)
 public abstract class MixinTabCompleter {
 
-	@ModifyArg(method = "complete", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiTextField;writeText(Ljava/lang/String;)V"))
+	@ModifyArg(method = "complete", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiTextField;" +
+			"writeText(Ljava/lang/String;)V"))
 	private String stripFormattingCodes(String text) {
 		return TextFormatting.getTextWithoutFormattingCodes(text);
 	}
 
-	@Inject(method = "requestCompletions", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/NetHandlerPlayClient;sendPacket(Lnet/minecraft/network/Packet;)V"))
+	@Inject(method = "requestCompletions", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network" +
+			"/NetHandlerPlayClient;sendPacket(Lnet/minecraft/network/Packet;)V"))
 	private void addAutoComplete(String prefix, CallbackInfo ci) {
 		if (!Configuration.enabled) {
 			return;
@@ -27,7 +29,8 @@ public abstract class MixinTabCompleter {
 		ClientCommandHandler.getInstance().autoComplete(prefix);
 	}
 
-	@ModifyVariable(method = "setCompletions", at = @At(value = "INVOKE", target = "Ljava/util/List;clear()V", remap = false), argsOnly = true)
+	@ModifyVariable(method = "setCompletions", at = @At(value = "INVOKE", target = "Ljava/util/List;clear()V", remap =
+			false), argsOnly = true)
 	private String[] setLatestAutoComplete(String... completions) {
 		if (!Configuration.enabled) {
 			return completions;
@@ -39,7 +42,8 @@ public abstract class MixinTabCompleter {
 		return completions;
 	}
 
-	@Redirect(method = "setCompletions", at = @At(value = "INVOKE", target = "Lorg/apache/commons/lang3/StringUtils;getCommonPrefix([Ljava/lang/String;)Ljava/lang/String;", remap = false))
+	@Redirect(method = "setCompletions", at = @At(value = "INVOKE", target = "Lorg/apache/commons/lang3/StringUtils;" +
+			"getCommonPrefix([Ljava/lang/String;)Ljava/lang/String;", remap = false))
 	private String adjustedGetCommonPrefix(String[] strings) {
 		final String string = StringUtils.getCommonPrefix(strings);
 		return TextFormatting.getTextWithoutFormattingCodes(string);

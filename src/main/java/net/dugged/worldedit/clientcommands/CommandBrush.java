@@ -25,18 +25,15 @@ public class CommandBrush extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return new TextComponentTranslation(
-				"text.worldedit.brush.usage").getUnformattedText();
+		return new TextComponentTranslation("text.worldedit.brush.usage").getUnformattedText();
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args)
-			throws CommandException {
+	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		Item itemInHand = mc.player.getHeldItemMainhand().getItem();
 		if (WorldEditManager.currentBrushes.containsKey(itemInHand)) {
 			WorldEditManager.currentBrushes.remove(itemInHand);
-			WorldEditManager.sendMessage(new TextComponentTranslation(
-					"text.worldedit.brush.cleared"));
+			WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.brush.cleared"));
 		} else if (args.length > 1 && args.length < 5) {
 			BrushBase selectedBrush = WorldEditManager.getBrush(args[0]);
 			if (selectedBrush != null) {
@@ -51,20 +48,18 @@ public class CommandBrush extends ClientCommand {
 					selectedBrush.setRadius(parseInt(args[3], 1));
 				}
 				WorldEditManager.currentBrushes.put(itemInHand, selectedBrush);
-				WorldEditManager.sendMessage(new TextComponentTranslation(
-						"text.worldedit.brush.bound",
+				WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.brush.bound",
 						selectedBrush.getName()));
 			} else {
-				WorldEditManager.sendMessage(new TextComponentTranslation(
-						"text.worldedit.brush.notFound", args[0]));
+				WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.brush.notFound", args[0]));
 			}
 		} else {
 			WorldEditManager.sendMessage(getUsage(sender));
 		}
 	}
 
-	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender,
-										  String[] args, @Nullable BlockPos pos) {
+	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args,
+										  @Nullable BlockPos pos) {
 		ArrayList<String> brushNames = new ArrayList<>();
 		if (args.length == 1) {
 			for (BrushBase brush : WorldEditManager.brushes) {

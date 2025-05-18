@@ -31,25 +31,21 @@ public class CommandReplace extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return new TextComponentTranslation(
-				"text.worldedit.replace.usage").getUnformattedText();
+		return new TextComponentTranslation("text.worldedit.replace.usage").getUnformattedText();
 	}
 
 	public void replaceBlocks(World world, WorldEditSelection selection, IBlockState stateToReplace,
 							  IBlockState replacementState, boolean ignoreBlockState, boolean preserveMeta) {
 		Map<BlockPos, IBlockState> blocksToPlace = new HashMap<>();
-		for (BlockPos pos : BlockPos.MutableBlockPos.getAllInBox(selection.getPos(A),
-				selection.getPos(B))) {
+		for (BlockPos pos : BlockPos.MutableBlockPos.getAllInBox(selection.getPos(A), selection.getPos(B))) {
 			if (Thread.interrupted()) {
 				return;
 			}
 			IBlockState blockState = world.getBlockState(pos);
-			if (blockState == stateToReplace || (ignoreBlockState
-					&& blockState.getBlock() == stateToReplace.getBlock())) {
+			if (blockState == stateToReplace || (ignoreBlockState && blockState.getBlock() == stateToReplace.getBlock())) {
 				if (preserveMeta) {
 					int meta = blockState.getBlock().getMetaFromState(blockState);
-					IBlockState newReplacementState = replacementState.getBlock()
-							.getStateFromMeta(meta);
+					IBlockState newReplacementState = replacementState.getBlock().getStateFromMeta(meta);
 					blocksToPlace.put(pos, newReplacementState);
 				} else {
 					blocksToPlace.put(pos, replacementState);
@@ -61,8 +57,7 @@ public class CommandReplace extends ClientCommand {
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args)
-			throws CommandException {
+	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		if (WorldEditManager.hasCurrentSelection()) {
 			WorldEditSelection selection = WorldEditManager.getCurrentSelection();
 			if (args.length == 3 || args.length == 4) {
@@ -91,23 +86,21 @@ public class CommandReplace extends ClientCommand {
 				} else {
 					blockState2 = block2.getDefaultState();
 				}
-				Thread t = new Thread(() ->
-						replaceBlocks(world, selection, blockState1, blockState2, ignoreBlockState,
-								preserveMeta));
+				Thread t = new Thread(() -> replaceBlocks(world, selection, blockState1, blockState2, ignoreBlockState
+						, preserveMeta));
 				t.start();
 				TaskManager.getInstance().threads.add(t);
 			} else {
 				WorldEditManager.sendMessage(getUsage(sender));
 			}
 		} else {
-			WorldEditManager.sendMessage(new TextComponentTranslation(
-					"text.worldedit.noAreaSelected"));
+			WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.noAreaSelected"));
 		}
 	}
 
 	@Override
-	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender,
-										  String[] args, @Nullable BlockPos pos) {
+	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args,
+										  @Nullable BlockPos pos) {
 		if (args.length == 1 || args.length == 3) {
 			return getListOfStringsMatchingLastWord(args, Block.REGISTRY.getKeys());
 		} else {

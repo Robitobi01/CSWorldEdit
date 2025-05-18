@@ -24,8 +24,7 @@ public class CommandFlip extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return new TextComponentTranslation(
-				"text.worldedit.flip.usage").getUnformattedText();
+		return new TextComponentTranslation("text.worldedit.flip.usage").getUnformattedText();
 	}
 
 	private void flipSelection(World world, WorldEditSelection selection) {
@@ -46,8 +45,7 @@ public class CommandFlip extends ClientCommand {
 					} else {
 						target = selection.minPos().add(selection.widthX() - x - 1, y, z);
 					}
-					blockList.put(target,
-							WorldEditManager.flipBlockstate(blockState, direction.getAxis()));
+					blockList.put(target, WorldEditManager.flipBlockstate(blockState, direction.getAxis()));
 				}
 			}
 		}
@@ -65,8 +63,7 @@ public class CommandFlip extends ClientCommand {
 				t.start();
 				TaskManager.getInstance().threads.add(t);
 			} else {
-				WorldEditManager.sendMessage(new TextComponentTranslation(
-						"text.worldedit.noAreaSelected"));
+				WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.noAreaSelected"));
 			}
 		} else {
 			WorldEditManager.sendMessage(getUsage(sender));

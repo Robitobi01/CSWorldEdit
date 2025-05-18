@@ -28,8 +28,7 @@ public class UndoManager {
 		double x = Double.parseDouble(args[startIndex]);
 		double y = Double.parseDouble(args[startIndex + 1]);
 		double z = Double.parseDouble(args[startIndex + 2]);
-		return new BlockPos(base.getX() + x, Math.max(0, Math.min(base.getY() + y, 255)),
-				base.getZ() + z);
+		return new BlockPos(base.getX() + x, Math.max(0, Math.min(base.getY() + y, 255)), base.getZ() + z);
 	}
 
 	public void pushSnapshot(UndoSnapshot snapshot) {
@@ -51,8 +50,7 @@ public class UndoManager {
 		}
 	}
 
-	public boolean saveHistory(String msg, World world,
-							   net.minecraft.client.entity.EntityPlayerSP player) {
+	public boolean saveHistory(String msg, World world, net.minecraft.client.entity.EntityPlayerSP player) {
 		if (!savingUndo) {
 			return false;
 		}
@@ -73,11 +71,9 @@ public class UndoManager {
 				BlockPos pos1 = parseBlockPos(args, 0, player);
 				BlockPos pos2 = parseBlockPos(args, 3, player);
 				BlockPos pos3 = parseBlockPos(args, 6, player);
-				BlockPos pos4 = pos3.add(
-						Math.max(pos1.getX(), pos2.getX()) - Math.min(pos1.getX(), pos2.getX()),
-						Math.max(pos1.getY(), pos2.getY()) - Math.min(pos1.getY(), pos2.getY()),
-						Math.max(pos1.getZ(), pos2.getZ()) - Math.min(pos1.getZ(), pos2.getZ())
-				);
+				BlockPos pos4 = pos3.add(Math.max(pos1.getX(), pos2.getX()) - Math.min(pos1.getX(), pos2.getX()),
+						Math.max(pos1.getY(), pos2.getY()) - Math.min(pos1.getY(), pos2.getY()), Math.max(pos1.getZ(),
+								pos2.getZ()) - Math.min(pos1.getZ(), pos2.getZ()));
 				Map<BlockPos, IBlockState> snapshot1 = UndoRecorder.recordRegion(pos1, pos2, world);
 				Map<BlockPos, IBlockState> snapshot2 = UndoRecorder.recordRegion(pos3, pos4, world);
 				snapshot1.putAll(snapshot2);

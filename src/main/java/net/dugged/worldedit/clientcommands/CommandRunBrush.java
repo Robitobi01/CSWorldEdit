@@ -29,12 +29,10 @@ public class CommandRunBrush extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return new TextComponentTranslation(
-				"text.worldedit.runbrush.usage").getUnformattedText();
+		return new TextComponentTranslation("text.worldedit.runbrush.usage").getUnformattedText();
 	}
 
-	private void runBrush(World world, WorldEditSelection selection, IBlockState maskBlockState,
-						  BrushBase brush) {
+	private void runBrush(World world, WorldEditSelection selection, IBlockState maskBlockState, BrushBase brush) {
 		List<BlockPos> positions = new ArrayList<>();
 		for (BlockPos pos : BlockPos.getAllInBox(selection.getPos(A), selection.getPos(B))) {
 			if (Thread.interrupted()) {
@@ -55,8 +53,7 @@ public class CommandRunBrush extends ClientCommand {
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args)
-			throws CommandException {
+	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		if (WorldEditManager.hasCurrentSelection()) {
 			if (args.length > 3 && args.length < 7) {
 				Block maskBlock = getBlockByText(sender, args[0]);
@@ -79,26 +76,24 @@ public class CommandRunBrush extends ClientCommand {
 						brush.setRadius(parseInt(args[5], 1));
 					}
 					BrushBase finalBrush = brush;
-					Thread t = new Thread(
-							() -> runBrush(sender.getEntityWorld(), WorldEditManager.getCurrentSelection(),
-									maskBlockState, finalBrush));
+					Thread t = new Thread(() -> runBrush(sender.getEntityWorld(),
+							WorldEditManager.getCurrentSelection(), maskBlockState, finalBrush));
 					t.start();
 					TaskManager.getInstance().threads.add(t);
 				} else {
-					WorldEditManager.sendMessage(new TextComponentTranslation(
-							"text.worldedit.brush.notFound", args[0]));
+					WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.brush.notFound",
+							args[0]));
 				}
 			} else {
 				WorldEditManager.sendMessage(getUsage(sender));
 			}
 		} else {
-			WorldEditManager.sendMessage(new TextComponentTranslation(
-					"text.worldedit.noAreaSelected"));
+			WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.noAreaSelected"));
 		}
 	}
 
-	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender,
-										  String[] args, @Nullable BlockPos pos) {
+	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args,
+										  @Nullable BlockPos pos) {
 		List<String> result = new ArrayList<>();
 		if (args.length == 3) {
 			for (BrushBase brush : WorldEditManager.brushes) {

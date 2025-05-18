@@ -29,13 +29,14 @@ public class CommandDrain extends ClientCommand {
 	}
 
 	private void checkAndAddNeighbor(World world, BlockPos neighbor, BlockPos startPos, int radius,
-									 ChunkPos currentChunk, List<BlockPos> checkedBlocks, List<BlockPos> blocksToCheck,
-									 Map<ChunkPos, BlockPos> chunkMap, Queue<ChunkPos> chunkQueue,
-									 Map<BlockPos, IBlockState> blocksToPlace, boolean drainImmediate) {
+									 ChunkPos currentChunk, List<BlockPos> checkedBlocks, List<BlockPos> blocksToCheck
+			, Map<ChunkPos, BlockPos> chunkMap, Queue<ChunkPos> chunkQueue, Map<BlockPos, IBlockState> blocksToPlace,
+									 boolean drainImmediate) {
 		if (!(world.getBlockState(neighbor).getBlock() instanceof BlockLiquid)) {
 			return;
 		}
-		if (!WorldEditManager.checkCircle(neighbor.getX() - startPos.getX(), neighbor.getZ() - startPos.getZ(), radius)) {
+		if (!WorldEditManager.checkCircle(neighbor.getX() - startPos.getX(), neighbor.getZ() - startPos.getZ(),
+				radius)) {
 			return;
 		}
 		ChunkPos np = world.getChunk(neighbor).getPos();
@@ -75,8 +76,8 @@ public class CommandDrain extends ClientCommand {
 				BlockPos pos = blocksToCheck.remove(0);
 				for (int i = 0; i < offsets.length; i++) {
 					BlockPos neighbor = pos.add(offsets[i][0], offsets[i][1], offsets[i][2]);
-					checkAndAddNeighbor(world, neighbor, startPos, radius, currentChunk,
-							checkedBlocks, blocksToCheck, chunkMap, chunkQueue, blocksToPlace, immediate[i]);
+					checkAndAddNeighbor(world, neighbor, startPos, radius, currentChunk, checkedBlocks, blocksToCheck,
+							chunkMap, chunkQueue, blocksToPlace, immediate[i]);
 				}
 				blocksToPlace.put(pos, Blocks.AIR.getDefaultState());
 			}
@@ -86,8 +87,7 @@ public class CommandDrain extends ClientCommand {
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args)
-			throws CommandException {
+	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		if (args.length == 0 || args.length == 1) {
 			World world = sender.getEntityWorld();
 			BlockPos pos = WorldEditManager.playerPos();

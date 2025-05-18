@@ -23,13 +23,11 @@ public class CommandMove extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return new TextComponentTranslation(
-				"text.worldedit.move.usage").getUnformattedText();
+		return new TextComponentTranslation("text.worldedit.move.usage").getUnformattedText();
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args)
-			throws CommandException {
+	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		if (WorldEditManager.hasCurrentSelection()) {
 			WorldEditSelection selection = WorldEditManager.getCurrentSelection();
 			if (args.length == 0 || args.length == 1) {
@@ -45,20 +43,18 @@ public class CommandMove extends ClientCommand {
 					dstOrigin = WorldEditManager.playerPos();
 				}
 				TaskClone.Mode mode = (distance > 0) ? TaskClone.Mode.MOVE : TaskClone.Mode.FORCE;
-				TaskClone task = new TaskClone(selection.minPos(), selection.maxPos(), dstOrigin,
-						world, mode);
+				TaskClone task = new TaskClone(selection.minPos(), selection.maxPos(), dstOrigin, world, mode);
 				Thread t = new Thread(() -> TaskManager.getInstance().addTask(task));
 				t.start();
 				TaskManager.getInstance().threads.add(t);
-				selection.setPos(A, dstOrigin.add(selection.widthX() - 1, selection.widthY() - 1, selection.widthZ() - 1));
+				selection.setPos(A, dstOrigin.add(selection.widthX() - 1, selection.widthY() - 1,
+						selection.widthZ() - 1));
 				selection.setPos(B, dstOrigin);
 			} else {
-				WorldEditManager.sendMessage(new TextComponentTranslation(
-						"text.worldedit.move.usage"));
+				WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.move.usage"));
 			}
 		} else {
-			WorldEditManager.sendMessage(new TextComponentTranslation(
-					"text.worldedit.noAreaSelected"));
+			WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.noAreaSelected"));
 		}
 	}
 }

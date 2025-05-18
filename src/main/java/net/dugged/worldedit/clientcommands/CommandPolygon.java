@@ -27,8 +27,7 @@ public class CommandPolygon extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return new TextComponentTranslation(
-				"text.worldedit.polygon.usage").getUnformattedText();
+		return new TextComponentTranslation("text.worldedit.polygon.usage").getUnformattedText();
 	}
 
 	private List<BlockPos> getLine(BlockPos start, BlockPos end) {
@@ -58,8 +57,7 @@ public class CommandPolygon extends ClientCommand {
 		return line;
 	}
 
-	private List<BlockPos> generateVertices(BlockPos center, int radius, int points,
-											boolean halfStep) {
+	private List<BlockPos> generateVertices(BlockPos center, int radius, int points, boolean halfStep) {
 		List<BlockPos> vertices = new ArrayList<>();
 		double angleStep = 2 * Math.PI / points;
 		double startAngle = halfStep ? angleStep / 2.0 : 0;
@@ -72,8 +70,8 @@ public class CommandPolygon extends ClientCommand {
 		return vertices;
 	}
 
-	private void generatePolygon(World world, BlockPos center,
-								 IBlockState blockState, int radius, int points, boolean halfStep) {
+	private void generatePolygon(World world, BlockPos center, IBlockState blockState, int radius, int points,
+								 boolean halfStep) {
 		List<BlockPos> vertices = generateVertices(center, radius, points, halfStep);
 		Map<BlockPos, IBlockState> blocksToPlace = new HashMap<>();
 		// Connect each vertex to the next, wrapping around to the first.
@@ -89,8 +87,7 @@ public class CommandPolygon extends ClientCommand {
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args)
-			throws CommandException {
+	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		if (args.length >= 4 && args.length <= 5) {
 			if (WorldEditManager.hasCurrentSelection()) {
 				WorldEditSelection selection = WorldEditManager.getCurrentSelection();
@@ -101,19 +98,15 @@ public class CommandPolygon extends ClientCommand {
 					int radius = parseInt(args[2]);
 					int points = parseInt(args[3]);
 					boolean halfStep = args.length == 5 && parseBoolean(args[4]);
-					Thread t = new Thread(() ->
-							generatePolygon(world, selection.getPos(A), blockState, radius,
-									points, halfStep)
-					);
+					Thread t = new Thread(() -> generatePolygon(world, selection.getPos(A), blockState, radius, points
+							, halfStep));
 					t.start();
 					TaskManager.getInstance().threads.add(t);
 				} else {
-					WorldEditManager.sendMessage(new TextComponentTranslation(
-							"text.worldedit.noOneByOneSelected"));
+					WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.noOneByOneSelected"));
 				}
 			} else {
-				WorldEditManager.sendMessage(new TextComponentTranslation(
-						"text.worldedit.noAreaSelected"));
+				WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.noAreaSelected"));
 			}
 		} else {
 			WorldEditManager.sendMessage(getUsage(sender));
@@ -121,8 +114,8 @@ public class CommandPolygon extends ClientCommand {
 	}
 
 	@Override
-	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender,
-										  String[] args, @Nullable BlockPos pos) {
+	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args,
+										  @Nullable BlockPos pos) {
 		if (args.length == 1) {
 			return getListOfStringsMatchingLastWord(args, Block.REGISTRY.getKeys());
 		} else if (args.length == 5) {

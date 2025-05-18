@@ -25,15 +25,12 @@ public class CommandOutlineFill extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return new TextComponentTranslation(
-				"text.worldedit.outlinefill.usage").getUnformattedText();
+		return new TextComponentTranslation("text.worldedit.outlinefill.usage").getUnformattedText();
 	}
 
 	private void checkNeighbor(World world, BlockPos neighbor, BlockPos startPos, int radius,
 							   List<BlockPos> blocksToCheck, List<BlockPos> checkedBlocks) {
-		if (world.getBlockState(neighbor).getBlock() instanceof BlockAir &&
-				WorldEditManager.checkCircle(neighbor.getX() - startPos.getX(),
-						neighbor.getZ() - startPos.getZ(), radius)) {
+		if (world.getBlockState(neighbor).getBlock() instanceof BlockAir && WorldEditManager.checkCircle(neighbor.getX() - startPos.getX(), neighbor.getZ() - startPos.getZ(), radius)) {
 			if (!checkedBlocks.contains(neighbor)) {
 				blocksToCheck.add(neighbor);
 				checkedBlocks.add(neighbor);
@@ -41,8 +38,7 @@ public class CommandOutlineFill extends ClientCommand {
 		}
 	}
 
-	private void outLineFill(World world, IBlockState blockState, BlockPos startPos, int height,
-							 int radius) {
+	private void outLineFill(World world, IBlockState blockState, BlockPos startPos, int height, int radius) {
 		Map<BlockPos, IBlockState> blocksToPlace = new HashMap<>();
 		List<BlockPos> checkedBlocks = new ArrayList<>();
 		List<BlockPos> blocksToCheck = new ArrayList<>();
@@ -68,8 +64,7 @@ public class CommandOutlineFill extends ClientCommand {
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args)
-			throws CommandException {
+	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		if (args.length == 3 || args.length == 4) {
 			World world = sender.getEntityWorld();
 			BlockPos pos = WorldEditManager.playerPos();
@@ -82,18 +77,16 @@ public class CommandOutlineFill extends ClientCommand {
 				t.start();
 				TaskManager.getInstance().threads.add(t);
 			} else {
-				WorldEditManager.sendMessage(new TextComponentTranslation(
-						"text.worldedit.floodfill.noSpaceToFlood"));
+				WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.floodfill.noSpaceToFlood"));
 			}
 		} else {
-			WorldEditManager.sendMessage(new TextComponentTranslation(
-					"text.worldedit.outlinefill.usage"));
+			WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.outlinefill.usage"));
 		}
 	}
 
 	@Override
-	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender,
-										  String[] args, @Nullable BlockPos pos) {
+	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args,
+										  @Nullable BlockPos pos) {
 		if (args.length == 1) {
 			return getListOfStringsMatchingLastWord(args, Block.REGISTRY.getKeys());
 		} else {

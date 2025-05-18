@@ -13,18 +13,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(GuiScreen.class)
 public abstract class MixinGuiScreen {
 
-	@Inject(method = "sendChatMessage(Ljava/lang/String;Z)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/entity/EntityPlayerSP;sendChatMessage(Ljava/lang/String;)V"), cancellable = true)
+	@Inject(method = "sendChatMessage(Ljava/lang/String;Z)V", at = @At(value = "INVOKE", target = "Lnet/minecraft" +
+			"/client/entity/EntityPlayerSP;sendChatMessage(Ljava/lang/String;)V"), cancellable = true)
 	private void addExecute(String msg, boolean addToChat, CallbackInfo ci) {
 		if (!Configuration.enabled) {
 			return;
 		}
 		Minecraft mc = Minecraft.getMinecraft();
-		if (ClientCommandHandler.getInstance().executeCommand(mc.player, msg)
-				!= 0) {
+		if (ClientCommandHandler.getInstance().executeCommand(mc.player, msg) != 0) {
 			ci.cancel();
 		}
-		if (msg.startsWith("/") && UndoManager.getInstance()
-				.saveHistory(msg, mc.player.world, mc.player)) {
+		if (msg.startsWith("/") && UndoManager.getInstance().saveHistory(msg, mc.player.world, mc.player)) {
 			ci.cancel();
 		}
 	}

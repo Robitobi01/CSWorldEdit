@@ -28,13 +28,11 @@ public class CommandHollow extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return new TextComponentTranslation(
-				"text.worldedit.hollow.usage").getUnformattedText();
+		return new TextComponentTranslation("text.worldedit.hollow.usage").getUnformattedText();
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args)
-			throws CommandException {
+	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		if (WorldEditManager.hasCurrentSelection()) {
 			WorldEditSelection selection = WorldEditManager.getCurrentSelection();
 			if (args.length > 0 && args.length <= 3) {
@@ -59,38 +57,32 @@ public class CommandHollow extends ClientCommand {
 				Map<AxisAlignedBB, IBlockState> regionMap = new LinkedHashMap<>();
 				// Front face (posMin.z side)
 				{
-					BlockPos corner2 = new BlockPos(posMax.getX(), posMax.getY(),
-							posMin.getZ() + thicknessZ);
+					BlockPos corner2 = new BlockPos(posMax.getX(), posMax.getY(), posMin.getZ() + thicknessZ);
 					regionMap.put(new AxisAlignedBB(posMin, corner2.add(1, 1, 1)), blockState);
 				}
 				// Left face (posMin.x side)
 				{
-					BlockPos corner2 = new BlockPos(posMin.getX() + thicknessX, posMax.getY(),
-							posMax.getZ());
+					BlockPos corner2 = new BlockPos(posMin.getX() + thicknessX, posMax.getY(), posMax.getZ());
 					regionMap.put(new AxisAlignedBB(posMin, corner2.add(1, 1, 1)), blockState);
 				}
 				// Bottom face (posMin.y side)
 				{
-					BlockPos corner2 = new BlockPos(posMax.getX(), posMin.getY() + thicknessY,
-							posMax.getZ());
+					BlockPos corner2 = new BlockPos(posMax.getX(), posMin.getY() + thicknessY, posMax.getZ());
 					regionMap.put(new AxisAlignedBB(posMin, corner2.add(1, 1, 1)), blockState);
 				}
 				// Back face (posMax.z side)
 				{
-					BlockPos corner1 = new BlockPos(posMin.getX(), posMin.getY(),
-							posMax.getZ() - thicknessZ);
+					BlockPos corner1 = new BlockPos(posMin.getX(), posMin.getY(), posMax.getZ() - thicknessZ);
 					regionMap.put(new AxisAlignedBB(corner1, posMax.add(1, 1, 1)), blockState);
 				}
 				// Right face (posMax.x side)
 				{
-					BlockPos corner1 = new BlockPos(posMax.getX() - thicknessX, posMin.getY(),
-							posMin.getZ());
+					BlockPos corner1 = new BlockPos(posMax.getX() - thicknessX, posMin.getY(), posMin.getZ());
 					regionMap.put(new AxisAlignedBB(corner1, posMax.add(1, 1, 1)), blockState);
 				}
 				// Top face (posMax.y side)
 				{
-					BlockPos corner1 = new BlockPos(posMin.getX(), posMax.getY() - thicknessY,
-							posMin.getZ());
+					BlockPos corner1 = new BlockPos(posMin.getX(), posMax.getY() - thicknessY, posMin.getZ());
 					regionMap.put(new AxisAlignedBB(corner1, posMax.add(1, 1, 1)), blockState);
 				}
 				TaskFill task = new TaskFill(regionMap, sender.getEntityWorld());
@@ -99,13 +91,12 @@ public class CommandHollow extends ClientCommand {
 				WorldEditManager.sendMessage(getUsage(sender));
 			}
 		} else {
-			WorldEditManager.sendMessage(new TextComponentTranslation(
-					"text.worldedit.noAreaSelected"));
+			WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.noAreaSelected"));
 		}
 	}
 
-	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender,
-										  String[] args, @Nullable BlockPos pos) {
+	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args,
+										  @Nullable BlockPos pos) {
 		if (args.length == 1) {
 			return getListOfStringsMatchingLastWord(args, Block.REGISTRY.getKeys());
 		} else {

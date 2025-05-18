@@ -43,8 +43,8 @@ public abstract class BrushBase {
 
 	public void execute(World world, BlockPos pos) {
 		List<BlockPos> positions = run(world, pos);
-		Map<BlockPos, IBlockState> blocksToPlace = positions.stream()
-				.collect(Collectors.toMap(Function.identity(), p -> blockState));
+		Map<BlockPos, IBlockState> blocksToPlace = positions.stream().collect(Collectors.toMap(Function.identity(),
+				p -> blockState));
 		if (!blocksToPlace.isEmpty()) {
 			TaskManager.getInstance().addTask(new TaskSetBlock(blocksToPlace, world));
 		}

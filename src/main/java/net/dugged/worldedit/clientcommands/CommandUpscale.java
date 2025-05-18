@@ -24,8 +24,7 @@ public class CommandUpscale extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return new TextComponentTranslation(
-				"text.worldedit.upscale.usage").getUnformattedText();
+		return new TextComponentTranslation("text.worldedit.upscale.usage").getUnformattedText();
 	}
 
 	private void upscaleSelection(World world, WorldEditSelection selection, int factor) {
@@ -44,21 +43,19 @@ public class CommandUpscale extends ClientCommand {
 						return;
 					}
 					IBlockState blockState = world.getBlockState(base.add(x, y, z));
-					BlockPos scaledMin = new BlockPos(base.getX() + (x * factor),
-							base.getY() + (y * factor), base.getZ() + (z * factor));
-					BlockPos scaledMax = new BlockPos(scaledMin.getX() + factor - 1,
-							scaledMin.getY() + factor - 1, scaledMin.getZ() + factor - 1);
+					BlockPos scaledMin = new BlockPos(base.getX() + (x * factor), base.getY() + (y * factor),
+							base.getZ() + (z * factor));
+					BlockPos scaledMax = new BlockPos(scaledMin.getX() + factor - 1, scaledMin.getY() + factor - 1,
+							scaledMin.getZ() + factor - 1);
 					boolean skip = true;
-					for (BlockPos pos : BlockPos.MutableBlockPos.getAllInBox(scaledMin,
-							scaledMax)) {
+					for (BlockPos pos : BlockPos.MutableBlockPos.getAllInBox(scaledMin, scaledMax)) {
 						if (!world.getBlockState(pos).equals(blockState)) {
 							skip = false;
 							break;
 						}
 					}
 					if (!skip) {
-						for (BlockPos pos : BlockPos.MutableBlockPos.getAllInBox(scaledMin,
-								scaledMax)) {
+						for (BlockPos pos : BlockPos.MutableBlockPos.getAllInBox(scaledMin, scaledMax)) {
 							blocksToPlace.put(pos, blockState);
 						}
 					}
@@ -70,8 +67,7 @@ public class CommandUpscale extends ClientCommand {
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args)
-			throws CommandException {
+	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		if (WorldEditManager.hasCurrentSelection()) {
 			WorldEditSelection selection = WorldEditManager.getCurrentSelection();
 			if (args.length == 1) {
@@ -81,12 +77,10 @@ public class CommandUpscale extends ClientCommand {
 				t.start();
 				TaskManager.getInstance().threads.add(t);
 			} else {
-				WorldEditManager.sendMessage(new TextComponentTranslation(
-						"text.worldedit.upscale.usage"));
+				WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.upscale.usage"));
 			}
 		} else {
-			WorldEditManager.sendMessage(new TextComponentTranslation(
-					"text.worldedit.noAreaSelected"));
+			WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.noAreaSelected"));
 		}
 	}
 }

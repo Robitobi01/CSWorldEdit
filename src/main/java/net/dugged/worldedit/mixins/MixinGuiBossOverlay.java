@@ -50,24 +50,18 @@ public abstract class MixinGuiBossOverlay extends Gui {
 			if (j > 0) {
 				drawTexturedModalRect(x, y, 0, color * 5 * 2 + 5, j, 5);
 			}
-			String s = new TextComponentTranslation(
-					"text.worldedit.progressBar").getUnformattedText();
+			String s = new TextComponentTranslation("text.worldedit.progressBar").getUnformattedText();
 			s += " " + String.format("%.2f", progress * 100) + "%";
-			mc.fontRenderer.drawString(s, i / 2 - mc.fontRenderer.getStringWidth(s) / 2, y - 10,
-					16777215);
+			mc.fontRenderer.drawString(s, i / 2 - mc.fontRenderer.getStringWidth(s) / 2, y - 10, 16777215);
 			if (TaskManager.getInstance().isWaitingForPlayer()) {
-				s = new TextComponentTranslation(
-						"text.worldedit.progressWaiting").getUnformattedText();
+				s = new TextComponentTranslation("text.worldedit.progressWaiting").getUnformattedText();
 				s += Strings.repeat(".", worldEdit$counter);
-				mc.fontRenderer.drawString(s, i / 2 - mc.fontRenderer.getStringWidth(s) / 2, y - 20,
-						16777215);
+				mc.fontRenderer.drawString(s, i / 2 - mc.fontRenderer.getStringWidth(s) / 2, y - 20, 16777215);
 			}
 		} else if (!TaskManager.getInstance().threads.isEmpty()) {
-			String s = new TextComponentTranslation(
-					"text.worldedit.progressProcessing").getUnformattedText();
+			String s = new TextComponentTranslation("text.worldedit.progressProcessing").getUnformattedText();
 			s += Strings.repeat(".", worldEdit$counter);
-			mc.fontRenderer.drawString(s, i / 2 - mc.fontRenderer.getStringWidth(s) / 2, y - 10,
-					16777215);
+			mc.fontRenderer.drawString(s, i / 2 - mc.fontRenderer.getStringWidth(s) / 2, y - 10, 16777215);
 		}
 		if (WorldEdit.tickCounter % 10 == 0 && worldEdit$lastTick != WorldEdit.tickCounter) {
 			worldEdit$counter++;

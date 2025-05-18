@@ -49,10 +49,8 @@ public class TaskReplaceItem extends TaskChunk {
 		while (count < maxPackets && !queue.isEmpty()) {
 			ReplaceItemOperation op = queue.poll();
 			for (int slot = 0; slot < op.inventorySize; slot++) {
-				String cmd = String.format("/replaceitem block %d %d %d slot.container.%d %s %d %d",
-						op.pos.getX(), op.pos.getY(), op.pos.getZ(),
-						slot,
-						op.stack.getItem().getRegistryName().toString(),
+				String cmd = String.format("/replaceitem block %d %d %d slot.container.%d %s %d %d", op.pos.getX(),
+						op.pos.getY(), op.pos.getZ(), slot, op.stack.getItem().getRegistryName().toString(),
 						op.stack.getCount(), op.stack.getItemDamage());
 				sendCommand(cmd);
 			}

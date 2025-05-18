@@ -29,8 +29,7 @@ public class WorldEditManager {
 	protected static final HashMap<WorldEditSelection.SelectionType, WorldEditSelection> selections = new HashMap<>();
 	private static final Minecraft mc = Minecraft.getMinecraft();
 
-	public static BlockPos getPos(WorldEditSelection.SelectionType type,
-								  WorldEditSelection.Position pos) {
+	public static BlockPos getPos(WorldEditSelection.SelectionType type, WorldEditSelection.Position pos) {
 		WorldEditSelection selection = selections.getOrDefault(type, null);
 		if (selection != null) {
 			return selection.getPos(pos);
@@ -43,8 +42,8 @@ public class WorldEditManager {
 		return getPos(WorldEditSelection.getTypeForMaterial(material), pos);
 	}
 
-	public static void setPos(WorldEditSelection.SelectionType type,
-							  WorldEditSelection.Position pos, BlockPos blockPos) {
+	public static void setPos(WorldEditSelection.SelectionType type, WorldEditSelection.Position pos,
+							  BlockPos blockPos) {
 		if (selections.containsKey(type)) {
 			WorldEditSelection selection = selections.get(type);
 			selection.setPos(pos, blockPos);
@@ -56,16 +55,14 @@ public class WorldEditManager {
 		}
 	}
 
-	public static void setPos(Item.ToolMaterial material, WorldEditSelection.Position pos,
-							  BlockPos blockPos) {
+	public static void setPos(Item.ToolMaterial material, WorldEditSelection.Position pos, BlockPos blockPos) {
 		setPos(WorldEditSelection.getTypeForMaterial(material), pos, blockPos);
 	}
 
 	public static WorldEditSelection getCurrentSelection() {
 		Item itemInHand = mc.player.getHeldItemMainhand().getItem();
 		if (mc.player.isCreative() && itemInHand instanceof ItemSword) {
-			return selections.get(
-					WorldEditSelection.getTypeForMaterial(((IItemSword) itemInHand).getMaterial()));
+			return selections.get(WorldEditSelection.getTypeForMaterial(((IItemSword) itemInHand).getMaterial()));
 		}
 		if (!mc.player.isCreative() && selections.containsKey(SelectionType.GOLD)) {
 			return selections.get(SelectionType.GOLD);
@@ -112,8 +109,7 @@ public class WorldEditManager {
 		Minecraft.getMinecraft().ingameGUI.getChatGUI().printChatMessage(msg);
 	}
 
-	public static boolean checkSphere(final double x, final double y, final double z,
-									  final double r) {
+	public static boolean checkSphere(final double x, final double y, final double z, final double r) {
 		return x * x + y * y + z * z <= r * r;
 	}
 
@@ -144,31 +140,25 @@ public class WorldEditManager {
 				return blockState.withProperty(BlockStairs.HALF, BlockStairs.EnumHalf.BOTTOM);
 			}
 		}
-		if (axis == EnumFacing.Axis.Y && blockState.getProperties()
-				.containsKey(BlockTrapDoor.HALF)) {
+		if (axis == EnumFacing.Axis.Y && blockState.getProperties().containsKey(BlockTrapDoor.HALF)) {
 			if (blockState.getValue(BlockTrapDoor.HALF) == BlockTrapDoor.DoorHalf.BOTTOM) {
 				return blockState.withProperty(BlockTrapDoor.HALF, BlockTrapDoor.DoorHalf.TOP);
 			} else if (blockState.getValue(BlockTrapDoor.HALF) == BlockTrapDoor.DoorHalf.TOP) {
 				return blockState.withProperty(BlockTrapDoor.HALF, BlockTrapDoor.DoorHalf.BOTTOM);
 			}
 		}
-		if (axis == EnumFacing.Axis.Y && blockState.getProperties()
-				.containsKey(BlockLever.FACING)) {
+		if (axis == EnumFacing.Axis.Y && blockState.getProperties().containsKey(BlockLever.FACING)) {
 			if (blockState.getValue(BlockLever.FACING) == BlockLever.EnumOrientation.DOWN_X) {
 				return blockState.withProperty(BlockLever.FACING, BlockLever.EnumOrientation.UP_X);
-			} else if (blockState.getValue(BlockLever.FACING)
-					== BlockLever.EnumOrientation.DOWN_Z) {
+			} else if (blockState.getValue(BlockLever.FACING) == BlockLever.EnumOrientation.DOWN_Z) {
 				return blockState.withProperty(BlockLever.FACING, BlockLever.EnumOrientation.UP_Z);
 			} else if (blockState.getValue(BlockLever.FACING) == BlockLever.EnumOrientation.UP_X) {
-				return blockState.withProperty(BlockLever.FACING,
-						BlockLever.EnumOrientation.DOWN_X);
+				return blockState.withProperty(BlockLever.FACING, BlockLever.EnumOrientation.DOWN_X);
 			} else if (blockState.getValue(BlockLever.FACING) == BlockLever.EnumOrientation.UP_Z) {
-				return blockState.withProperty(BlockLever.FACING,
-						BlockLever.EnumOrientation.DOWN_Z);
+				return blockState.withProperty(BlockLever.FACING, BlockLever.EnumOrientation.DOWN_Z);
 			}
 		}
-		if (axis == EnumFacing.Axis.Y && blockState.getProperties()
-				.containsKey(BlockDirectional.FACING)) {
+		if (axis == EnumFacing.Axis.Y && blockState.getProperties().containsKey(BlockDirectional.FACING)) {
 			if (blockState.getValue(BlockDirectional.FACING) == EnumFacing.DOWN) {
 				return blockState.withProperty(BlockDirectional.FACING, EnumFacing.UP);
 			} else if (blockState.getValue(BlockDirectional.FACING) == EnumFacing.UP) {

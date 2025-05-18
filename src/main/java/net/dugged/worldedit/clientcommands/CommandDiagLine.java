@@ -31,8 +31,7 @@ public class CommandDiagLine extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return new TextComponentTranslation(
-				"text.worldedit.diagline.usage").getUnformattedText();
+		return new TextComponentTranslation("text.worldedit.diagline.usage").getUnformattedText();
 	}
 
 	private int[] getDirection(BlockPos start) {
@@ -45,16 +44,14 @@ public class CommandDiagLine extends ClientCommand {
 		}
 	}
 
-	private void generateDiagLine(World world, BlockPos start,
-								  IBlockState blockState) {
+	private void generateDiagLine(World world, BlockPos start, IBlockState blockState) {
 		Map<BlockPos, IBlockState> blocksToPlace = new HashMap<>();
 		int y = start.getY();
 		int[] dir = getDirection(start);
 		int dx = dir[0];
 		int dz = dir[1];
 		BlockPos current = start;
-		boolean useDiff = ((start.getX() >= 0 && start.getZ() >= 0) || (start.getX() < 0
-				&& start.getZ() < 0));
+		boolean useDiff = ((start.getX() >= 0 && start.getZ() >= 0) || (start.getX() < 0 && start.getZ() < 0));
 		if (useDiff) {
 			int initialDiff = start.getX() - start.getZ();
 			while (true) {
@@ -103,8 +100,7 @@ public class CommandDiagLine extends ClientCommand {
 	private void setBlocks(IBlockState blockState, Map<BlockPos, IBlockState> blocksToPlace, BlockPos current) {
 		for (int ox = -1; ox <= 1; ox++) {
 			for (int oy = -1; oy <= 1; oy++) {
-				BlockPos pos = new BlockPos(current.getX() + ox, current.getY() + oy,
-						current.getZ());
+				BlockPos pos = new BlockPos(current.getX() + ox, current.getY() + oy, current.getZ());
 				if (ox == 0 && oy == 0) {
 					blocksToPlace.put(pos, blockState);
 				} else {
@@ -115,37 +111,32 @@ public class CommandDiagLine extends ClientCommand {
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args)
-			throws CommandException {
+	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		if (args.length == 1 || args.length == 2) {
 			if (WorldEditManager.hasCurrentSelection()) {
 				WorldEditSelection selection = WorldEditManager.getCurrentSelection();
 				if (selection.isOneByOne()) {
 					World world = sender.getEntityWorld();
 					Block block = getBlockByText(sender, args[0]);
-					IBlockState blockState =
-							(args.length == 2) ? convertArgToBlockState(block, args[1])
-									: block.getDefaultState();
+					IBlockState blockState = (args.length == 2) ? convertArgToBlockState(block, args[1]) :
+							block.getDefaultState();
 					BlockPos start = selection.getPos(A);
-					Thread t = new Thread(
-							() -> generateDiagLine(world, start, blockState));
+					Thread t = new Thread(() -> generateDiagLine(world, start, blockState));
 					t.start();
 					TaskManager.getInstance().threads.add(t);
 				} else {
-					WorldEditManager.sendMessage(new TextComponentTranslation(
-							"text.worldedit.noOneByOneSelected"));
+					WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.noOneByOneSelected"));
 				}
 			} else {
-				WorldEditManager.sendMessage(new TextComponentTranslation(
-						"text.worldedit.noAreaSelected"));
+				WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.noAreaSelected"));
 			}
 		} else {
 			WorldEditManager.sendMessage(getUsage(sender));
 		}
 	}
 
-	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender,
-										  String[] args, @Nullable BlockPos pos) {
+	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args,
+										  @Nullable BlockPos pos) {
 		if (args.length == 1) {
 			return getListOfStringsMatchingLastWord(args, Block.REGISTRY.getKeys());
 		} else {

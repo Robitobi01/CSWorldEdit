@@ -22,8 +22,7 @@ public class CommandCancel extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return new TextComponentTranslation(
-				"text.worldedit.cancel.usage").getUnformattedText();
+		return new TextComponentTranslation("text.worldedit.cancel.usage").getUnformattedText();
 	}
 
 	@Override
@@ -36,8 +35,7 @@ public class CommandCancel extends ClientCommand {
 			for (Thread thread : TaskManager.getInstance().threads) {
 				thread.interrupt();
 			}
-			WorldEditManager.sendMessage(new TextComponentTranslation(
-					"text.worldedit.cancel.cancelledAll"));
+			WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.cancel.cancelledAll"));
 		} else {
 			WorldEditManager.sendMessage(getUsage(sender));
 		}

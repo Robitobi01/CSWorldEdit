@@ -18,8 +18,7 @@ public class UndoRecorder {
 		return data;
 	}
 
-	public static Map<BlockPos, IBlockState> recordRegion(BlockPos pos1, BlockPos pos2,
-														  World world) {
+	public static Map<BlockPos, IBlockState> recordRegion(BlockPos pos1, BlockPos pos2, World world) {
 		int x1 = Math.min(pos1.getX(), pos2.getX());
 		int y1 = Math.min(pos1.getY(), pos2.getY());
 		int z1 = Math.min(pos1.getZ(), pos2.getZ());

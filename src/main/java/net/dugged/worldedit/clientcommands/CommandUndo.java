@@ -29,8 +29,7 @@ public class CommandUndo extends ClientCommand {
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args)
-			throws CommandException {
+	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		if (sender instanceof EntityPlayerSP) {
 			if (mc.player.isCreative() || mc.player.isSpectator()) {
 				World world = sender.getEntityWorld();
@@ -38,11 +37,11 @@ public class CommandUndo extends ClientCommand {
 					if (args[0].equalsIgnoreCase("toggle")) {
 						UndoManager.savingUndo = !UndoManager.savingUndo;
 						if (UndoManager.savingUndo) {
-							WorldEditManager.sendMessage(new TextComponentTranslation(
-									"text.worldedit.undo.enabledUndo"));
+							WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.undo" +
+									".enabledUndo"));
 						} else {
-							WorldEditManager.sendMessage(new TextComponentTranslation(
-									"text.worldedit.undo.disabledUndo"));
+							WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.undo" +
+									".disabledUndo"));
 						}
 					} else {
 						UndoManager.getInstance().undoLast(world);
@@ -57,8 +56,8 @@ public class CommandUndo extends ClientCommand {
 	}
 
 	@Override
-	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender,
-										  String[] args, @Nullable net.minecraft.util.math.BlockPos pos) {
+	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args,
+										  @Nullable net.minecraft.util.math.BlockPos pos) {
 		if (args.length == 1) {
 			return getListOfStringsMatchingLastWord(args, "toggle", "redo");
 		} else {

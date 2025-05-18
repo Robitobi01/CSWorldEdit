@@ -23,13 +23,11 @@ public class CommandCopyHere extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return new TextComponentTranslation(
-				"text.worldedit.copyhere.usage").getUnformattedText();
+		return new TextComponentTranslation("text.worldedit.copyhere.usage").getUnformattedText();
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args)
-			throws CommandException {
+	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		if (WorldEditManager.hasCurrentSelection()) {
 			if (args.length == 0 || args.length == 1) {
 				WorldEditSelection selection = WorldEditManager.getCurrentSelection();
@@ -38,23 +36,21 @@ public class CommandCopyHere extends ClientCommand {
 					moveSelection = parseBoolean(args[0]);
 				}
 				TaskClone.Mode mode = moveSelection ? TaskClone.Mode.MOVE : TaskClone.Mode.FORCE;
-				TaskClone task = new TaskClone(selection.minPos(), selection.maxPos(),
-						WorldEditManager.playerPos(), sender.getEntityWorld(), mode);
+				TaskClone task = new TaskClone(selection.minPos(), selection.maxPos(), WorldEditManager.playerPos(),
+						sender.getEntityWorld(), mode);
 				Thread t = new Thread(() -> TaskManager.getInstance().addTask(task));
 				t.start();
 				TaskManager.getInstance().threads.add(t);
 			} else {
-				WorldEditManager.sendMessage(new TextComponentTranslation(
-						"text.worldedit.copyhere.usage"));
+				WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.copyhere.usage"));
 			}
 		} else {
-			WorldEditManager.sendMessage(new TextComponentTranslation(
-					"text.worldedit.noAreaSelected"));
+			WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.noAreaSelected"));
 		}
 	}
 
-	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender,
-										  String[] args, @Nullable BlockPos pos) {
+	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args,
+										  @Nullable BlockPos pos) {
 		if (args.length == 1) {
 			return getListOfStringsMatchingLastWord(args, "true", "false");
 		} else {

@@ -106,10 +106,8 @@ public class ClientCommandHandler extends CommandHandler {
 		final String commandName = temp[0];
 		System.arraycopy(temp, 1, args, 0, args.length);
 		final ICommand command = getCommands().get(commandName);
-		if (command instanceof ClientCommand && ((ClientCommand) command).creativeOnly && !(
-				mc.player.isCreative() || mc.player.isSpectator())) {
-			final TextComponentTranslation error = new TextComponentTranslation(
-					"text.worldedit.wrongGamemode");
+		if (command instanceof ClientCommand && ((ClientCommand) command).creativeOnly && !(mc.player.isCreative() || mc.player.isSpectator())) {
+			final TextComponentTranslation error = new TextComponentTranslation("text.worldedit.wrongGamemode");
 			error.getStyle().setColor(TextFormatting.RED);
 			sender.sendMessage(error);
 			return -1;
@@ -121,8 +119,7 @@ public class ClientCommandHandler extends CommandHandler {
 		try {
 			this.tryExecute(sender, args, command, message);
 		} catch (Throwable t) {
-			final TextComponentTranslation error = new TextComponentTranslation(
-					"commands.generic.exception");
+			final TextComponentTranslation error = new TextComponentTranslation("commands.generic.exception");
 			error.getStyle().setColor(TextFormatting.RED);
 			sender.sendMessage(error);
 		}
@@ -134,15 +131,14 @@ public class ClientCommandHandler extends CommandHandler {
 		if (leftOfCursor.charAt(0) == '/') {
 			leftOfCursor = leftOfCursor.substring(1);
 			if (mc.currentScreen instanceof GuiChat) {
-				final List<String> commands = this.getTabCompletions(mc.player, leftOfCursor,
-						mc.player.getPosition());
+				final List<String> commands = this.getTabCompletions(mc.player, leftOfCursor, mc.player.getPosition());
 				if (!commands.isEmpty()) {
 					if (leftOfCursor.indexOf(' ') == -1) {
-						IntStream.range(0, commands.size())
-								.forEach(s -> commands.set(s, GRAY + "/" + commands.get(s) + RESET));
+						IntStream.range(0, commands.size()).forEach(s -> commands.set(s,
+								GRAY + "/" + commands.get(s) + RESET));
 					} else {
-						IntStream.range(0, commands.size())
-								.forEach(s -> commands.set(s, GRAY + commands.get(s) + RESET));
+						IntStream.range(0, commands.size()).forEach(s -> commands.set(s,
+								GRAY + commands.get(s) + RESET));
 					}
 					this.latestAutoComplete = commands.toArray(new String[0]);
 				}

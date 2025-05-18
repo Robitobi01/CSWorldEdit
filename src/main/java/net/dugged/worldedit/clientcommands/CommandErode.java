@@ -20,14 +20,8 @@ import static net.dugged.worldedit.WorldEditSelection.Position.B;
 
 public class CommandErode extends ClientCommand {
 
-	private static final int[][] OFFSETS = new int[][]{
-			{1, 0, 0},
-			{-1, 0, 0},
-			{0, 1, 0},
-			{0, -1, 0},
-			{0, 0, 1},
-			{0, 0, -1}
-	};
+	private static final int[][] OFFSETS = new int[][]{{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0,
+			-1}};
 
 	@Override
 	public String getName() {
@@ -36,19 +30,13 @@ public class CommandErode extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return new TextComponentTranslation(
-				"text.worldedit.erode.usage").getUnformattedText();
+		return new TextComponentTranslation("text.worldedit.erode.usage").getUnformattedText();
 	}
 
 	public boolean isSurrounded(BlockPos pos, World world, WorldEditSelection selection) {
 		for (int[] offset : OFFSETS) {
 			BlockPos neighborPos = pos.add(offset[0], offset[1], offset[2]);
-			if (neighborPos.getX() < selection.minPos().getX()
-					|| neighborPos.getX() > selection.maxPos().getX() ||
-					neighborPos.getY() < selection.minPos().getY()
-					|| neighborPos.getY() > selection.maxPos().getY() ||
-					neighborPos.getZ() < selection.minPos().getZ()
-					|| neighborPos.getZ() > selection.maxPos().getZ()) {
+			if (neighborPos.getX() < selection.minPos().getX() || neighborPos.getX() > selection.maxPos().getX() || neighborPos.getY() < selection.minPos().getY() || neighborPos.getY() > selection.maxPos().getY() || neighborPos.getZ() < selection.minPos().getZ() || neighborPos.getZ() > selection.maxPos().getZ()) {
 				continue;
 			}
 			if (!world.getBlockState(neighborPos).isFullBlock()) {
@@ -60,8 +48,7 @@ public class CommandErode extends ClientCommand {
 
 	public void erode(World world, WorldEditSelection selection) {
 		Map<BlockPos, IBlockState> blocksToPlace = new HashMap<>();
-		for (BlockPos pos : BlockPos.MutableBlockPos.getAllInBox(selection.getPos(A),
-				selection.getPos(B))) {
+		for (BlockPos pos : BlockPos.MutableBlockPos.getAllInBox(selection.getPos(A), selection.getPos(B))) {
 			if (Thread.interrupted()) {
 				return;
 			}
@@ -86,8 +73,7 @@ public class CommandErode extends ClientCommand {
 				t.start();
 				TaskManager.getInstance().threads.add(t);
 			} else {
-				WorldEditManager.sendMessage(new TextComponentTranslation(
-						"text.worldedit.noAreaSelected"));
+				WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.noAreaSelected"));
 			}
 		} else {
 			WorldEditManager.sendMessage(getUsage(sender));

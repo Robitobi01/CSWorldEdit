@@ -36,8 +36,7 @@ public class CommandWoolify extends ClientCommand {
 			float dyeR = ((dyeColorInt >> 16) & 0xFF) / 255f;
 			float dyeG = ((dyeColorInt >> 8) & 0xFF) / 255f;
 			float dyeB = (dyeColorInt & 0xFF) / 255f;
-			float distance =
-					(r - dyeR) * (r - dyeR) + (g - dyeG) * (g - dyeG) + (b - dyeB) * (b - dyeB);
+			float distance = (r - dyeR) * (r - dyeR) + (g - dyeG) * (g - dyeG) + (b - dyeB) * (b - dyeB);
 			if (distance < smallestDistance) {
 				smallestDistance = distance;
 				closestDye = dye;
@@ -53,20 +52,17 @@ public class CommandWoolify extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return new TextComponentTranslation(
-				"text.worldedit.size.usage").getUnformattedText();
+		return new TextComponentTranslation("text.worldedit.size.usage").getUnformattedText();
 	}
 
 	public void woolify(World world, WorldEditSelection selection) {
 		HashMap<BlockPos, IBlockState> blocksToPlace = new HashMap<>();
-		for (BlockPos pos : BlockPos.MutableBlockPos.getAllInBox(selection.getPos(A),
-				selection.getPos(B))) {
+		for (BlockPos pos : BlockPos.MutableBlockPos.getAllInBox(selection.getPos(A), selection.getPos(B))) {
 			if (Thread.interrupted()) {
 				return;
 			}
 			IBlockState blockState = world.getBlockState(pos);
-			if ((!blockState.isFullBlock() && !(blockState.getBlock() instanceof BlockLiquid))
-					|| blockState.getBlock().equals(Blocks.WOOL)) {
+			if ((!blockState.isFullBlock() && !(blockState.getBlock() instanceof BlockLiquid)) || blockState.getBlock().equals(Blocks.WOOL)) {
 				continue;
 			}
 			int metadata = getClosestDyeMetadata(blockState, world, pos);
@@ -86,8 +82,7 @@ public class CommandWoolify extends ClientCommand {
 				t.start();
 				TaskManager.getInstance().threads.add(t);
 			} else {
-				WorldEditManager.sendMessage(new TextComponentTranslation(
-						"text.worldedit.noAreaSelected"));
+				WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.noAreaSelected"));
 			}
 		} else {
 			WorldEditManager.sendMessage(getUsage(sender));

@@ -29,13 +29,11 @@ public class CommandWalls extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return new TextComponentTranslation(
-				"text.worldedit.walls.usage").getUnformattedText();
+		return new TextComponentTranslation("text.worldedit.walls.usage").getUnformattedText();
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args)
-			throws CommandException {
+	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		if (WorldEditManager.hasCurrentSelection()) {
 			if (args.length > 0 && args.length <= 3) {
 				Block block = getBlockByText(sender, args[0]);
@@ -57,32 +55,27 @@ public class CommandWalls extends ClientCommand {
 				int wallThicknessZ = Math.min(thickness, selection.widthZ() - 1);
 				int wallThicknessX = Math.min(thickness, selection.widthX() - 1);
 				Map<AxisAlignedBB, IBlockState> regionMap = new LinkedHashMap<>();
-				regionMap.put(new AxisAlignedBB(posMin,
-						new BlockPos(posMax.getX(), posMax.getY(), posMin.getZ() + wallThicknessZ).add(
-								1, 1, 1)), blockState);
-				regionMap.put(new AxisAlignedBB(posMin,
-						new BlockPos(posMin.getX() + wallThicknessX, posMax.getY(), posMax.getZ()).add(
-								1, 1, 1)), blockState);
-				regionMap.put(new AxisAlignedBB(
-						new BlockPos(posMin.getX(), posMin.getY(), posMax.getZ() - wallThicknessZ),
-						posMax.add(1, 1, 1)), blockState);
-				regionMap.put(new AxisAlignedBB(
-						new BlockPos(posMax.getX() - wallThicknessX, posMin.getY(), posMin.getZ()),
-						posMax.add(1, 1, 1)), blockState);
+				regionMap.put(new AxisAlignedBB(posMin, new BlockPos(posMax.getX(), posMax.getY(),
+						posMin.getZ() + wallThicknessZ).add(1, 1, 1)), blockState);
+				regionMap.put(new AxisAlignedBB(posMin, new BlockPos(posMin.getX() + wallThicknessX, posMax.getY(),
+						posMax.getZ()).add(1, 1, 1)), blockState);
+				regionMap.put(new AxisAlignedBB(new BlockPos(posMin.getX(), posMin.getY(),
+						posMax.getZ() - wallThicknessZ), posMax.add(1, 1, 1)), blockState);
+				regionMap.put(new AxisAlignedBB(new BlockPos(posMax.getX() - wallThicknessX, posMin.getY(),
+						posMin.getZ()), posMax.add(1, 1, 1)), blockState);
 				TaskFill task = new TaskFill(regionMap, world);
 				TaskManager.getInstance().addTask(task);
 			} else {
 				WorldEditManager.sendMessage(getUsage(sender));
 			}
 		} else {
-			WorldEditManager.sendMessage(new TextComponentTranslation(
-					"text.worldedit.noAreaSelected"));
+			WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.noAreaSelected"));
 		}
 	}
 
 	@Override
-	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender,
-										  String[] args, @Nullable BlockPos pos) {
+	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args,
+										  @Nullable BlockPos pos) {
 		if (args.length == 1) {
 			return getListOfStringsMatchingLastWord(args, Block.REGISTRY.getKeys());
 		} else {

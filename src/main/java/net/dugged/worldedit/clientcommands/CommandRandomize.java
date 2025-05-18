@@ -26,12 +26,10 @@ public class CommandRandomize extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return new TextComponentTranslation(
-				"text.worldedit.randomize.usage").getUnformattedText();
+		return new TextComponentTranslation("text.worldedit.randomize.usage").getUnformattedText();
 	}
 
-	private List<IBlockState> parseBlockList(String[] argList, ICommandSender sender)
-			throws CommandException {
+	private List<IBlockState> parseBlockList(String[] argList, ICommandSender sender) throws CommandException {
 		List<IBlockState> blockList = new ArrayList<>();
 		for (String args : String.join(" ", argList).split(",")) {
 			String[] arg = args.trim().split(" ");
@@ -47,12 +45,11 @@ public class CommandRandomize extends ClientCommand {
 		return blockList;
 	}
 
-	private void placeRandomBlocks(World world, WorldEditSelection selection,
-								   List<IBlockState> blockList, int percentage) {
+	private void placeRandomBlocks(World world, WorldEditSelection selection, List<IBlockState> blockList,
+								   int percentage) {
 		Map<BlockPos, IBlockState> blocksToPlace = new HashMap<>();
 		Random rand = new Random();
-		for (BlockPos pos : BlockPos.MutableBlockPos.getAllInBox(selection.minPos(),
-				selection.maxPos())) {
+		for (BlockPos pos : BlockPos.MutableBlockPos.getAllInBox(selection.minPos(), selection.maxPos())) {
 			if (Thread.interrupted()) {
 				return;
 			}
@@ -66,31 +63,27 @@ public class CommandRandomize extends ClientCommand {
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args)
-			throws CommandException {
+	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		if (args.length >= 2) {
 			if (WorldEditManager.hasCurrentSelection()) {
 				WorldEditSelection selection = WorldEditManager.getCurrentSelection();
 				sender.setCommandStat(CommandResultStats.Type.AFFECTED_BLOCKS, 0);
 				int percentage = parseInt(args[0], 0, 100);
 				World world = sender.getEntityWorld();
-				List<IBlockState> blockList = parseBlockList(
-						Arrays.copyOfRange(args, 1, args.length), sender);
-				Thread t = new Thread(
-						() -> placeRandomBlocks(world, selection, blockList, percentage));
+				List<IBlockState> blockList = parseBlockList(Arrays.copyOfRange(args, 1, args.length), sender);
+				Thread t = new Thread(() -> placeRandomBlocks(world, selection, blockList, percentage));
 				t.start();
 				TaskManager.getInstance().threads.add(t);
 			} else {
-				WorldEditManager.sendMessage(new TextComponentTranslation(
-						"text.worldedit.noAreaSelected"));
+				WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.noAreaSelected"));
 			}
 		} else {
 			WorldEditManager.sendMessage(getUsage(sender));
 		}
 	}
 
-	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender,
-										  String[] args, @Nullable BlockPos pos) {
+	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args,
+										  @Nullable BlockPos pos) {
 		if (args.length == 1) {
 			return getListOfStringsMatchingLastWord(args, Block.REGISTRY.getKeys());
 		} else {

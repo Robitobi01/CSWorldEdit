@@ -107,10 +107,10 @@ public class TaskManager {
 				}
 
 				if (nextChunkToProcessInOrder != null) {
-					if (Math.abs(nextChunkToProcessInOrder.x - playerChunk.x) <= Configuration.operationRange &&
-							Math.abs(nextChunkToProcessInOrder.z - playerChunk.z) <= Configuration.operationRange) {
+					if (Math.abs(nextChunkToProcessInOrder.x - playerChunk.x) <= Configuration.operationRange && Math.abs(nextChunkToProcessInOrder.z - playerChunk.z) <= Configuration.operationRange) {
 
-						int processedInChunk = cloneTask.processChunk(nextChunkToProcessInOrder, ClientCommandHandler.PACKET_LIMIT - packetsThisTick);
+						int processedInChunk = cloneTask.processChunk(nextChunkToProcessInOrder,
+								ClientCommandHandler.PACKET_LIMIT - packetsThisTick);
 						if (processedInChunk > 0) {
 							currentlyProcessing.add(nextChunkToProcessInOrder);
 							packetsThisTick += processedInChunk;
@@ -123,9 +123,9 @@ public class TaskManager {
 					if (packetsThisTick >= ClientCommandHandler.PACKET_LIMIT) {
 						break;
 					}
-					if (Math.abs(cpToProcess.x - playerChunk.x) <= Configuration.operationRange &&
-							Math.abs(cpToProcess.z - playerChunk.z) <= Configuration.operationRange) {
-						int processedInChunk = task.processChunk(cpToProcess, ClientCommandHandler.PACKET_LIMIT - packetsThisTick);
+					if (Math.abs(cpToProcess.x - playerChunk.x) <= Configuration.operationRange && Math.abs(cpToProcess.z - playerChunk.z) <= Configuration.operationRange) {
+						int processedInChunk = task.processChunk(cpToProcess,
+								ClientCommandHandler.PACKET_LIMIT - packetsThisTick);
 						if (processedInChunk > 0) {
 							currentlyProcessing.add(cpToProcess);
 							packetsThisTick += processedInChunk;

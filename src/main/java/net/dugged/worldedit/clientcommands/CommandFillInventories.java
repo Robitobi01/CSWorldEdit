@@ -31,20 +31,16 @@ public class CommandFillInventories extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return new TextComponentTranslation(
-				"text.worldedit.fillinventories.usage").getUnformattedText();
+		return new TextComponentTranslation("text.worldedit.fillinventories.usage").getUnformattedText();
 	}
 
 	private void fillInventories(World world, WorldEditSelection selection, ItemStack stack) {
 		Map<BlockPos, ItemStack> containerMap = new HashMap<>();
-		for (BlockPos pos : BlockPos.MutableBlockPos.getAllInBox(selection.getPos(A),
-				selection.getPos(B))) {
+		for (BlockPos pos : BlockPos.MutableBlockPos.getAllInBox(selection.getPos(A), selection.getPos(B))) {
 			if (Thread.interrupted()) {
 				return;
 			}
-			if (world.getBlockState(pos).getBlock() instanceof net.minecraft.block.BlockDispenser
-					|| world.getBlockState(pos).getBlock() instanceof net.minecraft.block.BlockChest
-					|| world.getBlockState(pos).getBlock() instanceof net.minecraft.block.BlockHopper) {
+			if (world.getBlockState(pos).getBlock() instanceof net.minecraft.block.BlockDispenser || world.getBlockState(pos).getBlock() instanceof net.minecraft.block.BlockChest || world.getBlockState(pos).getBlock() instanceof net.minecraft.block.BlockHopper) {
 				containerMap.put(pos, stack);
 			}
 		}
@@ -53,8 +49,7 @@ public class CommandFillInventories extends ClientCommand {
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args)
-			throws CommandException {
+	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		if (WorldEditManager.hasCurrentSelection()) {
 			if (args.length == 2 || args.length == 3) {
 				WorldEditSelection selection = WorldEditManager.getCurrentSelection();
@@ -70,14 +65,13 @@ public class CommandFillInventories extends ClientCommand {
 				WorldEditManager.sendMessage(getUsage(sender));
 			}
 		} else {
-			WorldEditManager.sendMessage(new TextComponentTranslation(
-					"text.worldedit.noAreaSelected"));
+			WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.noAreaSelected"));
 		}
 	}
 
 	@Override
-	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender,
-										  String[] args, @Nullable BlockPos pos) {
+	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args,
+										  @Nullable BlockPos pos) {
 		if (args.length == 1) {
 			return getListOfStringsMatchingLastWord(args, Item.REGISTRY.getKeys());
 		} else {

@@ -47,8 +47,7 @@ public class WorldEditSelection {
 
 
 	public boolean isCompleted() {
-		return positions.containsKey(Position.A) && positions.get(Position.A) != null && positions.containsKey(Position.B)
-				&& positions.get(Position.B) != null;
+		return positions.containsKey(Position.A) && positions.get(Position.A) != null && positions.containsKey(Position.B) && positions.get(Position.B) != null;
 	}
 
 	public AxisAlignedBB getBB() {
@@ -84,11 +83,7 @@ public class WorldEditSelection {
 	}
 
 	public enum SelectionType {
-		WOOD(134, 101, 38),
-		STONE(154, 154, 154),
-		IRON(255, 255, 255),
-		DIAMOND(51, 235, 203),
-		GOLD(234, 238, 87);
+		WOOD(134, 101, 38), STONE(154, 154, 154), IRON(255, 255, 255), DIAMOND(51, 235, 203), GOLD(234, 238, 87);
 
 		private final Color color;
 
@@ -102,8 +97,7 @@ public class WorldEditSelection {
 	}
 
 	public enum Position {
-		A(255, 0, 0),
-		B(0, 0, 255);
+		A(255, 0, 0), B(0, 0, 255);
 
 		private final Color color;
 

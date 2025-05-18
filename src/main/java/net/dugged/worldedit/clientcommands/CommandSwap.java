@@ -31,24 +31,21 @@ public class CommandSwap extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return new TextComponentTranslation(
-				"text.worldedit.swap.usage").getUnformattedText();
+		return new TextComponentTranslation("text.worldedit.swap.usage").getUnformattedText();
 	}
 
-	public void swapBlocks(World world, WorldEditSelection selection, IBlockState state1,
-						   IBlockState state2, boolean ignoreBlockState1, boolean preserveMeta,
-						   boolean ignoreBlockState2) {
+	public void swapBlocks(World world, WorldEditSelection selection, IBlockState state1, IBlockState state2,
+						   boolean ignoreBlockState1, boolean preserveMeta, boolean ignoreBlockState2) {
 		Map<BlockPos, IBlockState> blocksToPlace = new HashMap<>();
-		for (BlockPos pos : BlockPos.MutableBlockPos.getAllInBox(selection.getPos(A),
-				selection.getPos(B))) {
+		for (BlockPos pos : BlockPos.MutableBlockPos.getAllInBox(selection.getPos(A), selection.getPos(B))) {
 			if (Thread.interrupted()) {
 				return;
 			}
 			IBlockState currentState = world.getBlockState(pos);
-			boolean isState1 = ignoreBlockState1 ? currentState.getBlock() == state1.getBlock()
-					: currentState.equals(state1);
-			boolean isState2 = ignoreBlockState2 ? currentState.getBlock() == state2.getBlock()
-					: currentState.equals(state2);
+			boolean isState1 = ignoreBlockState1 ? currentState.getBlock() == state1.getBlock() :
+					currentState.equals(state1);
+			boolean isState2 = ignoreBlockState2 ? currentState.getBlock() == state2.getBlock() :
+					currentState.equals(state2);
 			if (isState1) {
 				if (preserveMeta) {
 					int meta = currentState.getBlock().getMetaFromState(currentState);
@@ -72,8 +69,7 @@ public class CommandSwap extends ClientCommand {
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args)
-			throws CommandException {
+	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		if (WorldEditManager.hasCurrentSelection()) {
 			WorldEditSelection selection = WorldEditManager.getCurrentSelection();
 			int len = args.length;
@@ -126,20 +122,18 @@ public class CommandSwap extends ClientCommand {
 					ignoreBlockState2 = false;
 				}
 			}
-			Thread t = new Thread(
-					() -> swapBlocks(world, selection, state1, state2, ignoreBlockState1, preserveMeta,
-							ignoreBlockState2));
+			Thread t = new Thread(() -> swapBlocks(world, selection, state1, state2, ignoreBlockState1, preserveMeta,
+					ignoreBlockState2));
 			t.start();
 			TaskManager.getInstance().threads.add(t);
 		} else {
-			WorldEditManager.sendMessage(new TextComponentTranslation(
-					"text.worldedit.noAreaSelected"));
+			WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.noAreaSelected"));
 		}
 	}
 
 	@Override
-	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender,
-										  String[] args, @Nullable BlockPos pos) {
+	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args,
+										  @Nullable BlockPos pos) {
 		if (args.length == 1 || args.length == 3) {
 			return getListOfStringsMatchingLastWord(args, Block.REGISTRY.getKeys());
 		} else {

@@ -23,8 +23,8 @@ public class TaskSetBlock extends TaskChunk {
 		this.world = world;
 		BlockPos minPos = new BlockPos(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE);
 		BlockPos maxPos = new BlockPos(Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE);
-		UndoManager.getInstance().pushSnapshot(
-				new UndoSnapshot(UndoRecorder.recordPositions(blocksToPlace.keySet(), world)));
+		UndoManager.getInstance().pushSnapshot(new UndoSnapshot(UndoRecorder.recordPositions(blocksToPlace.keySet(),
+				world)));
 		for (Map.Entry<BlockPos, IBlockState> entry : blocksToPlace.entrySet()) {
 			BlockPos pos = entry.getKey();
 			IBlockState state = entry.getValue();
@@ -38,19 +38,7 @@ public class TaskSetBlock extends TaskChunk {
 	}
 
 	private static boolean placeLast(Block block) {
-		return (block instanceof BlockBed || block instanceof BlockBush
-				|| block instanceof BlockFlowerPot || block instanceof BlockFire
-				|| block instanceof BlockButton || block instanceof BlockSign
-				|| block instanceof BlockChorusFlower || block instanceof BlockCake
-				|| block instanceof BlockCarpet || block instanceof BlockRailBase
-				|| block instanceof BlockEndRod || block instanceof BlockLever
-				|| block instanceof BlockRedstoneWire || block instanceof BlockCactus
-				|| block instanceof BlockVine || block instanceof BlockSnow
-				|| block instanceof BlockTorch || block instanceof BlockLadder
-				|| block instanceof BlockBanner || block instanceof BlockDoor
-				|| block instanceof BlockRedstoneDiode || block instanceof BlockBasePressurePlate
-				|| block instanceof BlockPistonMoving || block instanceof BlockPistonExtension
-				|| block instanceof BlockReed || block instanceof BlockTripWireHook);
+		return (block instanceof BlockBed || block instanceof BlockBush || block instanceof BlockFlowerPot || block instanceof BlockFire || block instanceof BlockButton || block instanceof BlockSign || block instanceof BlockChorusFlower || block instanceof BlockCake || block instanceof BlockCarpet || block instanceof BlockRailBase || block instanceof BlockEndRod || block instanceof BlockLever || block instanceof BlockRedstoneWire || block instanceof BlockCactus || block instanceof BlockVine || block instanceof BlockSnow || block instanceof BlockTorch || block instanceof BlockLadder || block instanceof BlockBanner || block instanceof BlockDoor || block instanceof BlockRedstoneDiode || block instanceof BlockBasePressurePlate || block instanceof BlockPistonMoving || block instanceof BlockPistonExtension || block instanceof BlockReed || block instanceof BlockTripWireHook);
 	}
 
 	@Override
@@ -112,8 +100,7 @@ public class TaskSetBlock extends TaskChunk {
 	private void sendSetBlockCommand(BlockPos pos, IBlockState blockState) {
 		String name = blockState.getBlock().getRegistryName().toString();
 		int meta = blockState.getBlock().getMetaFromState(blockState);
-		String cmd = String.format("/setblock %d %d %d %s %d", pos.getX(), pos.getY(), pos.getZ(),
-				name, meta);
+		String cmd = String.format("/setblock %d %d %d %s %d", pos.getX(), pos.getY(), pos.getZ(), name, meta);
 		sendCommand(cmd);
 	}
 

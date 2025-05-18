@@ -26,12 +26,13 @@ public class TaskClone extends TaskChunk {
 		this.mode = mode;
 		BlockPos minSrc = getMinPos(src1, src2);
 		BlockPos maxSrc = getMaxPos(src1, src2);
-		sourceRegion = new AxisAlignedBB((minSrc.getX() & ~15), 0, (minSrc.getZ() & ~15), ((maxSrc.getX() | 15) + 1), 256, ((maxSrc.getZ() | 15) + 1));
+		sourceRegion = new AxisAlignedBB((minSrc.getX() & ~15), 0, (minSrc.getZ() & ~15), ((maxSrc.getX() | 15) + 1),
+				256, ((maxSrc.getZ() | 15) + 1));
 
 		BlockPos srcDimensions = maxSrc.subtract(minSrc);
 		BlockPos maxDst = dstOrigin.add(srcDimensions);
-		Map<BlockPos, net.minecraft.block.state.IBlockState> undoData = UndoRecorder.recordRegion(
-				dstOrigin, maxDst, world);
+		Map<BlockPos, net.minecraft.block.state.IBlockState> undoData = UndoRecorder.recordRegion(dstOrigin, maxDst,
+				world);
 		UndoManager.getInstance().pushSnapshot(new UndoSnapshot(undoData));
 
 		BlockPos delta = dstOrigin.subtract(minSrc);
@@ -94,9 +95,7 @@ public class TaskClone extends TaskChunk {
 					int finalY2 = Math.max(currentSrcMinY, currentSrcMaxY);
 					int finalZ2 = Math.max(currentSrcMinZ, currentSrcMaxZ);
 
-					if (finalX1 > maxSrc.getX() || finalX2 < minSrc.getX() ||
-							finalY1 > maxSrc.getY() || finalY2 < minSrc.getY() ||
-							finalZ1 > maxSrc.getZ() || finalZ2 < minSrc.getZ()) {
+					if (finalX1 > maxSrc.getX() || finalX2 < minSrc.getX() || finalY1 > maxSrc.getY() || finalY2 < minSrc.getY() || finalZ1 > maxSrc.getZ() || finalZ2 < minSrc.getZ()) {
 						continue;
 					}
 
@@ -104,7 +103,8 @@ public class TaskClone extends TaskChunk {
 					int destSubMinY = dstOrigin.getY() + (finalY1 - minSrc.getY());
 					int destSubMinZ = dstOrigin.getZ() + (finalZ1 - minSrc.getZ());
 
-					CloneOperation op = new CloneOperation(finalX1, finalY1, finalZ1, finalX2, finalY2, finalZ2, destSubMinX, destSubMinY, destSubMinZ);
+					CloneOperation op = new CloneOperation(finalX1, finalY1, finalZ1, finalX2, finalY2, finalZ2,
+							destSubMinX, destSubMinY, destSubMinZ);
 					tempOperationsList.add(op);
 					uniqueDestinationChunksInOrder.add(new ChunkPos(new BlockPos(op.x3, op.y3, op.z3)));
 				}
@@ -130,8 +130,8 @@ public class TaskClone extends TaskChunk {
 
 		while (count < maxPackets && !queue.isEmpty()) {
 			CloneOperation op = queue.poll();
-			String cmd = String.format("/clone %d %d %d %d %d %d %d %d %d %s", op.x1, op.y1, op.z1,
-					op.x2, op.y2, op.z2, op.x3, op.y3, op.z3, mode.getCommandArg());
+			String cmd = String.format("/clone %d %d %d %d %d %d %d %d %d %s", op.x1, op.y1, op.z1, op.x2, op.y2,
+					op.z2, op.x3, op.y3, op.z3, mode.getCommandArg());
 			sendCommand(cmd);
 			count++;
 			processedOps++;

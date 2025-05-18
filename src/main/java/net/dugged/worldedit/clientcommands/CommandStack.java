@@ -27,13 +27,11 @@ public class CommandStack extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return new TextComponentTranslation(
-				"text.worldedit.stack.usage").getUnformattedText();
+		return new TextComponentTranslation("text.worldedit.stack.usage").getUnformattedText();
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args)
-			throws CommandException {
+	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		if (WorldEditManager.hasCurrentSelection()) {
 			WorldEditSelection selection = WorldEditManager.getCurrentSelection();
 			if (args.length >= 1 && args.length <= 4) {
@@ -73,42 +71,33 @@ public class CommandStack extends ClientCommand {
 							break;
 					}
 					lastCloneOrigin = dest;
-					TaskClone taskClone = new TaskClone(minPos, maxPos, dest,
-							sender.getEntityWorld(), mode);
+					TaskClone taskClone = new TaskClone(minPos, maxPos, dest, sender.getEntityWorld(), mode);
 					TaskManager.getInstance().addTask(taskClone);
 				}
 
 				if (moveSelection && lastCloneOrigin != null) {
-					BlockPos newPosA =
-							(facing.getAxisDirection() == EnumFacing.AxisDirection.POSITIVE) ? minPos
-									: maxPos;
-					BlockPos newPosB = lastCloneOrigin.add(
-							maxPos.getX() - minPos.getX(),
-							maxPos.getY() - minPos.getY(),
-							maxPos.getZ() - minPos.getZ());
+					BlockPos newPosA = (facing.getAxisDirection() == EnumFacing.AxisDirection.POSITIVE) ? minPos :
+							maxPos;
+					BlockPos newPosB = lastCloneOrigin.add(maxPos.getX() - minPos.getX(),
+							maxPos.getY() - minPos.getY(), maxPos.getZ() - minPos.getZ());
 					selection.setPos(A, newPosA);
 					selection.setPos(B, newPosB);
-					selection.setPos(A, new BlockPos(
-							selection.getPos(A).getX(),
-							Math.max(Math.min(selection.getPos(A).getY(), 255), 0),
-							selection.getPos(A).getZ()));
-					selection.setPos(B, new BlockPos(
-							selection.getPos(B).getX(),
-							Math.max(Math.min(selection.getPos(B).getY(), 255), 0),
-							selection.getPos(B).getZ()));
+					selection.setPos(A, new BlockPos(selection.getPos(A).getX(),
+							Math.max(Math.min(selection.getPos(A).getY(), 255), 0), selection.getPos(A).getZ()));
+					selection.setPos(B, new BlockPos(selection.getPos(B).getX(),
+							Math.max(Math.min(selection.getPos(B).getY(), 255), 0), selection.getPos(B).getZ()));
 				}
 			} else {
 				WorldEditManager.sendMessage(getUsage(sender));
 			}
 		} else {
-			WorldEditManager.sendMessage(new TextComponentTranslation(
-					"text.worldedit.noAreaSelected"));
+			WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.noAreaSelected"));
 		}
 	}
 
 
-	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender,
-										  String[] args, @Nullable BlockPos pos) {
+	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args,
+										  @Nullable BlockPos pos) {
 		if (args.length == 3 || args.length == 4) {
 			return getListOfStringsMatchingLastWord(args, "true", "false");
 		} else {

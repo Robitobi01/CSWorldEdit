@@ -44,8 +44,7 @@ public class TaskFill extends TaskChunk {
 		for (Map.Entry<AxisAlignedBB, IBlockState> entry : regionMap.entrySet()) {
 			AxisAlignedBB bb = entry.getKey();
 			IBlockState stateForRegion = entry.getValue();
-			undoData.putAll(UndoRecorder.recordRegion(
-					new BlockPos((int) bb.minX, (int) bb.minY, (int) bb.minZ),
+			undoData.putAll(UndoRecorder.recordRegion(new BlockPos((int) bb.minX, (int) bb.minY, (int) bb.minZ),
 					new BlockPos((int) bb.maxX, (int) bb.maxY, (int) bb.maxZ), world));
 			for (int x = (int) bb.minX; x <= (int) bb.maxX; x += SUBCHUNK) {
 				int ex = Math.min(x + SUBCHUNK - 1, (int) bb.maxX);
@@ -75,8 +74,8 @@ public class TaskFill extends TaskChunk {
 			FillOperation op = queue.poll();
 			String name = Objects.requireNonNull(op.state.getBlock().getRegistryName()).toString();
 			int meta = op.state.getBlock().getMetaFromState(op.state);
-			String cmd = String.format("/fill %d %d %d %d %d %d %s %d", op.x1, op.y1, op.z1, op.x2,
-					op.y2, op.z2, name, meta);
+			String cmd = String.format("/fill %d %d %d %d %d %d %s %d", op.x1, op.y1, op.z1, op.x2, op.y2, op.z2, name
+					, meta);
 			sendCommand(cmd);
 			processedOps++;
 			count++;

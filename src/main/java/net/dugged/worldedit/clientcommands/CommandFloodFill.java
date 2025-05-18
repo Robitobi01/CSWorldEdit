@@ -26,18 +26,17 @@ public class CommandFloodFill extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return new TextComponentTranslation(
-				"text.worldedit.floodfill.usage").getUnformattedText();
+		return new TextComponentTranslation("text.worldedit.floodfill.usage").getUnformattedText();
 	}
 
 	private void checkAndAddNeighbor(World world, BlockPos neighbor, BlockPos startPos, int radius,
-									 ChunkPos currentChunk, List<BlockPos> checkedBlocks, List<BlockPos> blocksToCheck,
-									 Map<ChunkPos, BlockPos> chunkMap, List<ChunkPos> chunkList) {
+									 ChunkPos currentChunk, List<BlockPos> checkedBlocks, List<BlockPos> blocksToCheck
+			, Map<ChunkPos, BlockPos> chunkMap, List<ChunkPos> chunkList) {
 		if (!(world.getBlockState(neighbor).getBlock() instanceof BlockAir)) {
 			return;
 		}
-		if (!WorldEditManager.checkCircle(neighbor.getX() - startPos.getX(),
-				neighbor.getZ() - startPos.getZ(), radius)) {
+		if (!WorldEditManager.checkCircle(neighbor.getX() - startPos.getX(), neighbor.getZ() - startPos.getZ(),
+				radius)) {
 			return;
 		}
 		ChunkPos np = world.getChunk(neighbor).getPos();
@@ -75,19 +74,19 @@ public class CommandFloodFill extends ClientCommand {
 				BlockPos pos = blocksToCheck.remove(0);
 				BlockPos up = pos.up();
 				if (up.getY() <= startPos.getY()) {
-					checkAndAddNeighbor(world, up, startPos, radius, currentChunk, checkedBlocks,
-							blocksToCheck, chunkMap, chunkList);
+					checkAndAddNeighbor(world, up, startPos, radius, currentChunk, checkedBlocks, blocksToCheck,
+							chunkMap, chunkList);
 				}
-				checkAndAddNeighbor(world, pos.down(), startPos, radius, currentChunk,
-						checkedBlocks, blocksToCheck, chunkMap, chunkList);
-				checkAndAddNeighbor(world, pos.north(), startPos, radius, currentChunk,
-						checkedBlocks, blocksToCheck, chunkMap, chunkList);
-				checkAndAddNeighbor(world, pos.east(), startPos, radius, currentChunk,
-						checkedBlocks, blocksToCheck, chunkMap, chunkList);
-				checkAndAddNeighbor(world, pos.south(), startPos, radius, currentChunk,
-						checkedBlocks, blocksToCheck, chunkMap, chunkList);
-				checkAndAddNeighbor(world, pos.west(), startPos, radius, currentChunk,
-						checkedBlocks, blocksToCheck, chunkMap, chunkList);
+				checkAndAddNeighbor(world, pos.down(), startPos, radius, currentChunk, checkedBlocks, blocksToCheck,
+						chunkMap, chunkList);
+				checkAndAddNeighbor(world, pos.north(), startPos, radius, currentChunk, checkedBlocks, blocksToCheck,
+						chunkMap, chunkList);
+				checkAndAddNeighbor(world, pos.east(), startPos, radius, currentChunk, checkedBlocks, blocksToCheck,
+						chunkMap, chunkList);
+				checkAndAddNeighbor(world, pos.south(), startPos, radius, currentChunk, checkedBlocks, blocksToCheck,
+						chunkMap, chunkList);
+				checkAndAddNeighbor(world, pos.west(), startPos, radius, currentChunk, checkedBlocks, blocksToCheck,
+						chunkMap, chunkList);
 				blocksToPlace.put(pos, blockState);
 			}
 		}
@@ -96,32 +95,29 @@ public class CommandFloodFill extends ClientCommand {
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args)
-			throws CommandException {
+	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		if (args.length >= 1 && args.length <= 3) {
 			World world = sender.getEntityWorld();
 			BlockPos pos = WorldEditManager.playerPos();
 			if (world.getBlockState(pos).getBlock() instanceof BlockAir) {
 				Block block = getBlockByText(sender, args[0]);
-				IBlockState blockState = args.length >= 2 ? convertArgToBlockState(block, args[1])
-						: block.getDefaultState();
+				IBlockState blockState = args.length >= 2 ? convertArgToBlockState(block, args[1]) :
+						block.getDefaultState();
 				int radius = args.length == 3 ? parseInt(args[2]) : 100;
 				Thread t = new Thread(() -> floodFill(world, blockState, pos, radius));
 				t.start();
 				TaskManager.getInstance().threads.add(t);
 			} else {
-				WorldEditManager.sendMessage(new TextComponentTranslation(
-						"text.worldedit.floodfill.noSpaceToFlood"));
+				WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.floodfill.noSpaceToFlood"));
 			}
 		} else {
-			WorldEditManager.sendMessage(new TextComponentTranslation(
-					"text.worldedit.floodfill.usage"));
+			WorldEditManager.sendMessage(new TextComponentTranslation("text.worldedit.floodfill.usage"));
 		}
 	}
 
 	@Override
-	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender,
-										  String[] args, @Nullable BlockPos pos) {
+	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args,
+										  @Nullable BlockPos pos) {
 		if (args.length == 1) {
 			return getListOfStringsMatchingLastWord(args, Block.REGISTRY.getKeys());
 		}
