@@ -20,13 +20,29 @@ public class UndoManager {
 		return INSTANCE;
 	}
 
+	private static double parseCoordinate(double base, String s, int min, int max, boolean centerBlock) {
+		boolean rel = s.startsWith("~");
+		String t = rel ? s.substring(1) : s;
+		double d = 0.0;
+		if (!rel || !t.isEmpty()) {
+			boolean hasDot = t.indexOf('.') >= 0;
+			if (!t.isEmpty()) d += Double.parseDouble(t);
+			if (!hasDot && !rel && centerBlock) d += 0.5;
+		}
+		double r = d + (rel ? base : 0.0);
+		if (min != 0 || max != 0) {
+			if (r < min) r = min;
+			if (r > max) r = max;
+		}
+		return r;
+	}
+
 	private static BlockPos parseBlockPos(String[] args, int startIndex,
-										  net.minecraft.client.entity.EntityPlayerSP player) throws NumberFormatException {
-		BlockPos base = player.getPosition();
-		double x = Double.parseDouble(args[startIndex]);
-		double y = Double.parseDouble(args[startIndex + 1]);
-		double z = Double.parseDouble(args[startIndex + 2]);
-		return new BlockPos(base.getX() + x, Math.max(0, Math.min(base.getY() + y, 255)), base.getZ() + z);
+										  net.minecraft.client.entity.EntityPlayerSP player) {
+		double x = parseCoordinate(player.posX, args[startIndex], -30000000, 30000000, false);
+		double y = parseCoordinate(player.posY, args[startIndex + 1], 0, 255, false);
+		double z = parseCoordinate(player.posZ, args[startIndex + 2], -30000000, 30000000, false);
+		return new BlockPos(x, y, z);
 	}
 
 	public void pushSnapshot(UndoSnapshot snapshot) {
@@ -48,13 +64,13 @@ public class UndoManager {
 		}
 	}
 
-	public boolean saveHistory(String msg, World world, net.minecraft.client.entity.EntityPlayerSP player) {
+	public void saveCmdUndo(String msg, World world, net.minecraft.client.entity.EntityPlayerSP player) {
 		if (!savingUndo) {
-			return false;
+			return;
 		}
 		String[] temp = msg.split(" ");
 		if (temp.length < 4) {
-			return false;
+			return;
 		}
 		String[] args = new String[temp.length - 1];
 		System.arraycopy(temp, 1, args, 0, args.length);
@@ -65,7 +81,6 @@ public class UndoManager {
 				UndoSnapshot snapshot = new UndoSnapshot();
 				snapshot.recordRegion(pos1, pos2, world);
 				pushSnapshot(snapshot);
-				return true;
 			} else if (msg.startsWith("/clone") && args.length >= 9) {
 				BlockPos pos1 = parseBlockPos(args, 0, player);
 				BlockPos pos2 = parseBlockPos(args, 3, player);
@@ -76,12 +91,8 @@ public class UndoManager {
 				UndoSnapshot snapshot = new UndoSnapshot();
 				snapshot.recordRegion(pos3, pos4, world);
 				pushSnapshot(snapshot);
-				return true;
-			} else {
-				return false;
 			}
-		} catch (Exception e) {
-			return false;
+		} catch (Exception ignored) {
 		}
 	}
 }

@@ -23,8 +23,6 @@ public abstract class MixinGuiScreen {
 		if (ClientCommandHandler.getInstance().executeCommand(mc.player, msg) != 0) {
 			ci.cancel();
 		}
-		if (msg.startsWith("/") && UndoManager.getInstance().saveHistory(msg, mc.player.world, mc.player)) {
-			ci.cancel();
-		}
+		UndoManager.getInstance().saveCmdUndo(msg, mc.player.world, mc.player);
 	}
 }
