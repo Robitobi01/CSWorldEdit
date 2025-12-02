@@ -23,7 +23,6 @@ import java.util.Map;
 import static net.dugged.csworldedit.Selection.Position.A;
 
 public class CommandDiagLine extends ClientCommand {
-
 	@Override
 	public String getName() {
 		return "diagline";
@@ -34,61 +33,104 @@ public class CommandDiagLine extends ClientCommand {
 		return new TextComponentTranslation("text.worldedit.diagline.usage").getUnformattedText();
 	}
 
-	private int[] getDirection(BlockPos start) {
-		int x = start.getX();
-		int z = start.getZ();
-		if ((x >= 0 && z >= 0) || (x < 0 && z < 0)) {
-			return (x < z) ? new int[]{1, -1} : new int[]{-1, 1};
+	private int[] getQuadConfig(int x, int z) {
+		if (x > 0 && z <= 0) {
+			// north east (+x, -z)
+			return new int[]{1, -1, 13, -9};
+		} else if (x <= 0 && z < 0) {
+			// north west (-x, -z)
+			return new int[]{-1, -1, -9, -13};
+		} else if (x < 0) {
+			// south west (-x, +z)
+			return new int[]{-1, 1, -13, 9};
 		} else {
-			return (x < -z) ? new int[]{1, 1} : new int[]{-1, -1};
+			// south east (+x, +z)
+			return new int[]{1, 1, 9, 13};
 		}
 	}
 
-	private void generateDiagLine(World world, BlockPos start, IBlockState blockState) {
+	private BlockPos getSnappedStart(BlockPos target, int[] config) {
+		int dx = config[0];
+		int dz = config[1];
+		int rx = config[2];
+		int rz = config[3];
+		double dist;
+		if (dx == dz) {
+			dist = (target.getX() - rx + target.getZ() - rz) / 2.0;
+		} else {
+			dist = (target.getX() - rx - (target.getZ() - rz)) / 2.0;
+		}
+		if (dx < 0) {
+			dist = -dist;
+		}
+		long steps = Math.round(dist / 10.0);
+		return new BlockPos(rx + steps * 10 * dx, target.getY(), rz + steps * 10 * dz);
+	}
+
+	private BlockPos getIntersection(BlockPos pos, int[] config) {
+		int dx = config[0];
+		int dz = config[1];
+		int rx = config[2];
+		int rz = config[3];
+		int px = pos.getX();
+		int pz = pos.getZ();
+		long ix, iz;
+		if (dx == dz) {
+			long cw = rz - rx;
+			long k = pz + px;
+			ix = (k - cw) / 2;
+			iz = ix + cw;
+		} else {
+			long cw = rz + rx;
+			long k = pz - px;
+			ix = (cw - k) / 2;
+			iz = -ix + cw;
+		}
+		return new BlockPos((int) ix, pos.getY(), (int) iz);
+	}
+
+	private void generateDiagLine(World world, BlockPos inputPos, IBlockState blockState) {
 		Map<BlockPos, IBlockState> blocksToPlace = new HashMap<>();
-		int y = start.getY();
-		int[] dir = getDirection(start);
-		int dx = dir[0];
-		int dz = dir[1];
-		BlockPos current = start;
-		boolean useDiff = ((start.getX() >= 0 && start.getZ() >= 0) || (start.getX() < 0 && start.getZ() < 0));
-		if (useDiff) {
-			int initialDiff = start.getX() - start.getZ();
-			while (true) {
-				setBlocks(blockState, blocksToPlace, current);
-				int currentDiff = current.getX() - current.getZ();
-				if (initialDiff < 0) {
-					if (currentDiff >= 0) {
-						break;
-					}
-				} else {
-					if (currentDiff <= 0) {
-						break;
-					}
-				}
-				current = current.add(dx, 0, dz);
-				if (Thread.interrupted()) {
-					return;
-				}
+		int[] config = getQuadConfig(inputPos.getX(), inputPos.getZ());
+		BlockPos intersection = getIntersection(inputPos, config);
+		BlockPos startPos = getSnappedStart(intersection, config);
+
+		int dx, dz;
+		int wdx = config[0];
+		int wdz = config[1];
+
+		if (wdx == wdz) {
+			if (inputPos.getX() < startPos.getX()) {
+				dx = -1;
+				dz = 1;
+			} else {
+				dx = 1;
+				dz = -1;
 			}
 		} else {
-			int initialSum = start.getX() + start.getZ();
-			while (true) {
-				setBlocks(blockState, blocksToPlace, current);
-				int currentSum = current.getX() + current.getZ();
-				if (initialSum < 0) {
-					if (currentSum >= 0) {
-						break;
-					}
-				} else {
-					if (currentSum <= 0) {
-						break;
-					}
-				}
-				current = current.add(dx, 0, dz);
-				if (Thread.interrupted()) {
-					return;
-				}
+			if (inputPos.getX() < startPos.getX()) {
+				dx = -1;
+				dz = -1;
+			} else {
+				dx = 1;
+				dz = 1;
+			}
+		}
+
+		BlockPos current = startPos;
+		double currentDistSq = current.distanceSq(inputPos);
+
+		while (true) {
+			setBlocks(blockState, blocksToPlace, current);
+			BlockPos next = current.add(dx, 0, dz);
+			double nextDistSq = next.distanceSq(inputPos);
+			if (nextDistSq >= currentDistSq) {
+				break;
+			}
+			current = next;
+			currentDistSq = nextDistSq;
+			if (Thread.interrupted()) {
+				return;
 			}
 		}
 		if (!blocksToPlace.isEmpty()) {
