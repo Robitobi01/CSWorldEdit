@@ -1,18 +1,18 @@
 {
-	"package": "net.dugged.csworldedit.mixins",
+	"package": ${mixin_package},
 	"required": true,
-	"refmap": "mixins.csworldedit.refmap.json",
+	"refmap": ${mixin_refmap},
 	"target": "@env(DEFAULT)",
 	"minVersion": "0.8.5",
-	"compatibilityLevel": "JAVA_8",
-	"mixins": [
+	"compatibilityLevel": "JAVA_25",
+	"mixins": [],
+	"server": [],
+	"client": [
 		"IItemSword",
 		"MixinGuiBossOverlay",
 		"MixinGuiScreen",
 		"MixinMinecraft",
 		"MixinNetHandlerPlayClient",
 		"MixinTabCompleter"
-	],
-	"server": [],
-	"client": []
+	]
 }

@@ -25,7 +25,8 @@ import org.apache.logging.log4j.Logger;
 import static net.dugged.csworldedit.Selection.Position.A;
 import static net.dugged.csworldedit.Selection.Position.B;
 
-@Mod(modid = Tags.MOD_ID, name = Tags.MOD_NAME, version = Tags.VERSION)
+@Mod(modid = Tags.MOD_ID, name = Tags.MOD_NAME, version = Tags.VERSION,
+		dependencies = "required-after:cleanroom@[" + Tags.CLEANROOM_VERSION + ",)")
 public class CSWorldEdit {
 
 	public static final Logger LOGGER = LogManager.getLogger(Tags.MOD_NAME);

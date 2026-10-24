@@ -1,11 +1,3 @@
-# eclipse
-bin
-*.launch
-.settings
-.metadata
-.classpath
-.project
-
 # idea
 out
 *.ipr
@@ -17,6 +9,12 @@ out
 build
 .gradle
 
+# kate
+*.kate-swp
+
 # other
-eclipse
 run
+
+# Nix / direnv
+.direnv/
+result
