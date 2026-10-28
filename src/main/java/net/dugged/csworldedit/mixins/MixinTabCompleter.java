@@ -2,11 +2,11 @@ package net.dugged.csworldedit.mixins;
 
 
 import com.google.common.collect.ObjectArrays;
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import net.dugged.csworldedit.Configuration;
 import net.dugged.csworldedit.clientcommands.ClientCommandHandler;
 import net.minecraft.util.TabCompleter;
 import net.minecraft.util.text.TextFormatting;
-import org.apache.commons.lang3.StringUtils;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -42,11 +42,10 @@ public abstract class MixinTabCompleter {
 		return completions;
 	}
 
-	@Redirect(method = "setCompletions", at = @At(value = "INVOKE", target =
+	@ModifyExpressionValue(method = "setCompletions", at = @At(value = "INVOKE", target =
 			"Lorg/apache/commons/lang3/StringUtils;" + "getCommonPrefix([Ljava/lang/String;)Ljava/lang/String;",
 			remap = false))
-	private String adjustedGetCommonPrefix(String[] strings) {
-		final String string = StringUtils.getCommonPrefix(strings);
+	private String adjustedGetCommonPrefix(String string) {
 		return TextFormatting.getTextWithoutFormattingCodes(string);
 	}
 }

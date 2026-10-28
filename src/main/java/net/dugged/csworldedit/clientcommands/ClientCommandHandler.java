@@ -1,6 +1,7 @@
 package net.dugged.csworldedit.clientcommands;
 
 import net.dugged.csworldedit.CSWorldEdit;
+import net.dugged.csworldedit.Configuration;
 import net.dugged.csworldedit.Manager;
 import net.dugged.csworldedit.brushes.BrushIceSpike;
 import net.dugged.csworldedit.brushes.BrushPerimeterWall;
@@ -9,15 +10,23 @@ import net.dugged.csworldedit.brushes.BrushRemoveColumn;
 import net.dugged.csworldedit.tasks.TaskManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiChat;
+import net.minecraft.command.CommandBase;
+import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandHandler;
 import net.minecraft.command.ICommand;
 import net.minecraft.command.ICommandSender;
+import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.network.play.client.CPacketTabComplete;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.util.text.TextFormatting;
+import net.minecraftforge.client.IClientCommand;
 
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 import static net.minecraft.util.text.TextFormatting.GRAY;
@@ -29,6 +38,7 @@ public class ClientCommandHandler extends CommandHandler {
 	private static final ClientCommandHandler instance = new ClientCommandHandler();
 	private final Minecraft mc = Minecraft.getMinecraft();
 	public String[] latestAutoComplete = null;
+	private boolean forgeCommandsRegistered = false;
 
 	public static ClientCommandHandler getInstance() {
 		return instance;
@@ -89,6 +99,32 @@ public class ClientCommandHandler extends CommandHandler {
 		Manager.brushes.add(new BrushRemoveColumn());
 		Manager.brushes.add(new BrushPerimeterWall());
 		Manager.brushes.add(new BrushPlaceTop());
+
+		// Cleanroom 0.7's command suggestion UI reads Forge's client command registry,
+		// not this legacy handler. Mirror only the completion/execution surface there.
+		if (Configuration.enabled) {
+			registerForgeCommands();
+		}
+	}
+
+	private void registerForgeCommands() {
+		if (forgeCommandsRegistered) {
+			return;
+		}
+		forgeCommandsRegistered = true;
+
+		final Set<ICommand> uniqueCommands = Collections.newSetFromMap(new IdentityHashMap<>());
+		for (final ICommand command : getCommands().values()) {
+			if (command == null || !uniqueCommands.add(command)) {
+				continue;
+			}
+			final net.minecraftforge.client.ClientCommandHandler forgeHandler =
+					net.minecraftforge.client.ClientCommandHandler.instance;
+			if (forgeHandler.getCommands().containsKey(command.getName())) {
+				continue;
+			}
+			forgeHandler.registerCommand(new ForgeCommandBridge(this, command));
+		}
 	}
 
 	@Override
@@ -106,6 +142,10 @@ public class ClientCommandHandler extends CommandHandler {
 		final String commandName = temp[0];
 		System.arraycopy(temp, 1, args, 0, args.length);
 		final ICommand command = getCommands().get(commandName);
+		return executeClientCommand(sender, command, args, message);
+	}
+
+	private int executeClientCommand(ICommandSender sender, ICommand command, String[] args, String input) {
 		if (command instanceof ClientCommand && ((ClientCommand) command).creativeOnly && !(mc.player.isCreative() || mc.player.isSpectator())) {
 			final TextComponentTranslation error = new TextComponentTranslation("text.worldedit.wrongGamemode");
 			error.getStyle().setColor(TextFormatting.RED);
@@ -117,13 +157,74 @@ public class ClientCommandHandler extends CommandHandler {
 		}
 
 		try {
-			this.tryExecute(sender, args, command, message);
+			this.tryExecute(sender, args, command, input);
 		} catch (Throwable t) {
 			final TextComponentTranslation error = new TextComponentTranslation("commands.generic.exception");
 			error.getStyle().setColor(TextFormatting.RED);
 			sender.sendMessage(error);
 		}
 		return -1;
+	}
+
+	private static final class ForgeCommandBridge extends CommandBase implements IClientCommand {
+		private final ClientCommandHandler owner;
+		private final ICommand delegate;
+
+		private ForgeCommandBridge(ClientCommandHandler owner, ICommand delegate) {
+			this.owner = owner;
+			this.delegate = delegate;
+		}
+
+		@Override
+		public String getName() {
+			return delegate.getName();
+		}
+
+		@Override
+		public String getUsage(ICommandSender sender) {
+			return delegate.getUsage(sender);
+		}
+
+		@Override
+		public List<String> getAliases() {
+			return delegate.getAliases();
+		}
+
+		@Override
+		public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
+			if (!Configuration.enabled) {
+				if (sender instanceof EntityPlayerSP) {
+					final StringBuilder command = new StringBuilder("/").append(delegate.getName());
+					for (String arg : args) {
+						command.append(' ').append(arg);
+					}
+					((EntityPlayerSP) sender).sendChatMessage(command.toString());
+				}
+				return;
+			}
+			owner.executeClientCommand(sender, delegate, args, delegate.getName());
+		}
+
+		@Override
+		public boolean checkPermission(MinecraftServer server, ICommandSender sender) {
+			return true;
+		}
+
+		@Override
+		public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args,
+											  BlockPos pos) {
+			return delegate.getTabCompletions(server, sender, args, pos);
+		}
+
+		@Override
+		public boolean isUsernameIndex(String[] args, int index) {
+			return delegate.isUsernameIndex(args, index);
+		}
+
+		@Override
+		public boolean allowUsageWithoutPrefix(ICommandSender sender, String message) {
+			return false;
+		}
 	}
 
 	public void autoComplete(String leftOfCursor) {
