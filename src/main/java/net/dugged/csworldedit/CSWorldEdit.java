@@ -1,5 +1,6 @@
 package net.dugged.csworldedit;
 
+import net.dugged.csworldedit.api.WorldEditApiIntegration;
 import net.dugged.csworldedit.brushes.BrushBase;
 import net.dugged.csworldedit.clientcommands.ClientCommandHandler;
 import net.dugged.csworldedit.mixins.IItemSword;
@@ -46,6 +47,7 @@ public class CSWorldEdit {
 	public void preInit(FMLPreInitializationEvent event) {
 		MinecraftForge.EVENT_BUS.register(this);
 		ConfigCleanup.prune(Tags.MOD_ID);
+		WorldEditApiIntegration.register();
 	}
 
 	@Mod.EventHandler
