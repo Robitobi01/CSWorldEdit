@@ -1,6 +1,10 @@
 package net.dugged.csworldedit.clientcommands;
 
 import net.dugged.csworldedit.Manager;
+import net.dugged.csworldedit.scan.ClientJob;
+import net.dugged.csworldedit.scan.ClientWorldView;
+import net.dugged.csworldedit.scan.ScanFeedback;
+import net.dugged.csworldedit.scan.SnapshotManager;
 import net.dugged.csworldedit.tasks.TaskManager;
 import net.dugged.csworldedit.tasks.TaskSetBlock;
 import net.minecraft.block.Block;
@@ -10,7 +14,6 @@ import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.World;
 
@@ -29,83 +32,70 @@ public class CommandFloodFill extends ClientCommand {
 		return new TextComponentTranslation("text.worldedit.floodfill.usage").getUnformattedText();
 	}
 
-	private void checkAndAddNeighbor(World world, BlockPos neighbor, BlockPos startPos, int radius,
-									 ChunkPos currentChunk, List<BlockPos> checkedBlocks, List<BlockPos> blocksToCheck
-			, Map<ChunkPos, BlockPos> chunkMap, List<ChunkPos> chunkList) {
-		if (!(world.getBlockState(neighbor).getBlock() instanceof BlockAir)) {
-			return;
-		}
-		if (!Manager.checkCircle(neighbor.getX() - startPos.getX(), neighbor.getZ() - startPos.getZ(), radius)) {
-			return;
-		}
-		ChunkPos np = world.getChunk(neighbor).getPos();
-		if (np.equals(currentChunk)) {
-			if (!checkedBlocks.contains(neighbor)) {
-				blocksToCheck.add(neighbor);
-				checkedBlocks.add(neighbor);
-			}
-		} else {
-			if (!chunkMap.containsKey(np)) {
-				chunkList.add(np);
-				chunkMap.put(np, neighbor);
-			}
-		}
-	}
-
-	private void floodFill(World world, IBlockState blockState, BlockPos startPos, int radius) {
-		Map<BlockPos, IBlockState> blocksToPlace = new HashMap<>();
-		List<ChunkPos> chunkList = new ArrayList<>();
-		Map<ChunkPos, BlockPos> chunkMap = new HashMap<>();
-		ChunkPos startChunk = world.getChunk(startPos).getPos();
-		chunkList.add(startChunk);
-		chunkMap.put(startChunk, startPos);
-		while (!chunkList.isEmpty()) {
-			ChunkPos currentChunk = chunkList.remove(0);
-			BlockPos chunkStart = chunkMap.get(currentChunk);
-			List<BlockPos> checkedBlocks = new ArrayList<>();
-			List<BlockPos> blocksToCheck = new ArrayList<>();
-			blocksToCheck.add(chunkStart);
-			checkedBlocks.add(chunkStart);
-			while (!blocksToCheck.isEmpty()) {
-				if (Thread.interrupted()) {
-					return;
-				}
-				BlockPos pos = blocksToCheck.remove(0);
-				BlockPos up = pos.up();
-				if (up.getY() <= startPos.getY()) {
-					checkAndAddNeighbor(world, up, startPos, radius, currentChunk, checkedBlocks, blocksToCheck,
-							chunkMap, chunkList);
-				}
-				checkAndAddNeighbor(world, pos.down(), startPos, radius, currentChunk, checkedBlocks, blocksToCheck,
-						chunkMap, chunkList);
-				checkAndAddNeighbor(world, pos.north(), startPos, radius, currentChunk, checkedBlocks, blocksToCheck,
-						chunkMap, chunkList);
-				checkAndAddNeighbor(world, pos.east(), startPos, radius, currentChunk, checkedBlocks, blocksToCheck,
-						chunkMap, chunkList);
-				checkAndAddNeighbor(world, pos.south(), startPos, radius, currentChunk, checkedBlocks, blocksToCheck,
-						chunkMap, chunkList);
-				checkAndAddNeighbor(world, pos.west(), startPos, radius, currentChunk, checkedBlocks, blocksToCheck,
-						chunkMap, chunkList);
-				blocksToPlace.put(pos, blockState);
-			}
-		}
-		TaskSetBlock task = new TaskSetBlock(blocksToPlace, world);
-		TaskManager.getInstance().addTask(task);
-	}
-
 	@Override
 	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		if (args.length >= 1 && args.length <= 3) {
 			World world = sender.getEntityWorld();
 			BlockPos pos = Manager.playerPos();
-			if (world.getBlockState(pos).getBlock() instanceof BlockAir) {
+			ClientWorldView view = new ClientWorldView(world);
+			IBlockState initial = view.getBlock(pos.getX(), pos.getY(), pos.getZ());
+			if (initial != null && initial.getBlock() instanceof BlockAir) {
 				Block block = getBlockByText(sender, args[0]);
 				IBlockState blockState = args.length >= 2 ? convertArgToBlockState(block, args[1]) :
 						block.getDefaultState();
 				int radius = args.length == 3 ? parseInt(args[2]) : 100;
-				Thread t = new Thread(() -> floodFill(world, blockState, pos, radius));
-				t.start();
-				TaskManager.getInstance().threads.add(t);
+				SnapshotManager.SubmitResult result = SnapshotManager.getInstance().submitClientJob(
+						new ClientJob(world) {
+							private final ClientWorldView reader = new ClientWorldView(world);
+							private final Set<BlockPos> checkedBlocks = new HashSet<>();
+							private final Queue<BlockPos> blocksToCheck = new ArrayDeque<>();
+							private final Map<BlockPos, IBlockState> blocksToPlace = new HashMap<>();
+
+							{
+								checkedBlocks.add(pos);
+								blocksToCheck.add(pos);
+							}
+
+							@Override
+							public int step(int budget) {
+								int count = Math.min(budget, 256);
+								for (int i = 0; i < count && !blocksToCheck.isEmpty(); i++) {
+									BlockPos current = blocksToCheck.poll();
+									BlockPos up = current.up();
+									if (up.getY() <= pos.getY()) {
+										addNeighbor(up);
+									}
+									addNeighbor(current.down());
+									addNeighbor(current.north());
+									addNeighbor(current.east());
+									addNeighbor(current.south());
+									addNeighbor(current.west());
+									blocksToPlace.put(current, blockState);
+								}
+								if (blocksToCheck.isEmpty()) {
+									markFinished();
+									if (!blocksToPlace.isEmpty()) {
+										TaskManager.getInstance().scheduleClient(() -> TaskManager.getInstance()
+												.addTask(new TaskSetBlock(blocksToPlace, world)));
+									}
+								}
+								return count;
+							}
+
+							private void addNeighbor(BlockPos neighbor) {
+								IBlockState state = reader.getBlock(neighbor.getX(), neighbor.getY(), neighbor.getZ());
+								if (state == null || !(state.getBlock() instanceof BlockAir)) {
+									return;
+								}
+								if (!Manager.checkCircle(neighbor.getX() - pos.getX(), neighbor.getZ() - pos.getZ(), radius)) {
+									return;
+								}
+								if (checkedBlocks.add(neighbor)) {
+									blocksToCheck.add(neighbor);
+								}
+							}
+						});
+				ScanFeedback.report(result);
 			} else {
 				Manager.sendMessage(new TextComponentTranslation("text.worldedit.floodfill.noSpaceToFlood"));
 			}

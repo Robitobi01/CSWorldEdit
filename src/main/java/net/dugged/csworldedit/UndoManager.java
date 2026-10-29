@@ -1,5 +1,6 @@
 package net.dugged.csworldedit;
 
+import net.dugged.csworldedit.sp.SPEditBackend;
 import net.dugged.csworldedit.tasks.TaskManager;
 import net.dugged.csworldedit.tasks.TaskSetBlock;
 import net.minecraft.util.math.BlockPos;
@@ -12,8 +13,8 @@ public class UndoManager {
 
 	private static final UndoManager INSTANCE = new UndoManager();
 	private static final int MAX_HISTORY = 10;
-	public static boolean isUndoing = false;
-	public static boolean savingUndo = true;
+	private static volatile boolean isUndoing = false;
+	public static volatile boolean savingUndo = true;
 	private final Deque<UndoSnapshot> undoHistory = new LinkedList<>();
 
 	public static UndoManager getInstance() {
@@ -45,22 +46,41 @@ public class UndoManager {
 		return new BlockPos(x, y, z);
 	}
 
-	public void pushSnapshot(UndoSnapshot snapshot) {
+	public synchronized void pushSnapshot(UndoSnapshot snapshot) {
+		if (snapshot == null || (snapshot.isEmpty() && !snapshot.isPending())
+				|| TaskManager.getInstance().isCancelledThread(Thread.currentThread())) {
+			return;
+		}
 		if (savingUndo && !isUndoing) {
+			snapshot.clearPending();
 			undoHistory.push(snapshot);
-			if (undoHistory.size() > MAX_HISTORY) {
+			while (undoHistory.size() > MAX_HISTORY) {
 				undoHistory.removeLast();
 			}
 		}
 	}
 
-	public void undoLast(World world) {
+	public synchronized void clearHistory() {
+		undoHistory.clear();
+	}
+
+	public synchronized void undoLast(World world) {
 		if (!undoHistory.isEmpty()) {
 			isUndoing = true;
-			UndoSnapshot snapshot = undoHistory.pop();
-			TaskSetBlock task = new TaskSetBlock(snapshot.getUndoData(), world);
-			TaskManager.getInstance().addTask(task);
-			isUndoing = false;
+			try {
+				TaskManager.getInstance().cancelAllTasks();
+				UndoSnapshot snapshot = undoHistory.pop();
+				if (SPEditBackend.isAvailable(world)) {
+					if (!SPEditBackend.getInstance().submitUndo(snapshot, world)) {
+						undoHistory.push(snapshot);
+					}
+				} else {
+					TaskSetBlock task = new TaskSetBlock(snapshot.getUndoData(), world);
+					TaskManager.getInstance().addTask(task);
+				}
+			} finally {
+				isUndoing = false;
+			}
 		}
 	}
 

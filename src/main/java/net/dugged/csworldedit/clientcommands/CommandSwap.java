@@ -2,6 +2,9 @@ package net.dugged.csworldedit.clientcommands;
 
 import net.dugged.csworldedit.Manager;
 import net.dugged.csworldedit.Selection;
+import net.dugged.csworldedit.scan.ClientWorldView;
+import net.dugged.csworldedit.scan.ScanFeedback;
+import net.dugged.csworldedit.scan.SnapshotManager;
 import net.dugged.csworldedit.tasks.TaskManager;
 import net.dugged.csworldedit.tasks.TaskSetBlock;
 import net.minecraft.block.Block;
@@ -19,9 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static net.dugged.csworldedit.Selection.Position.A;
-import static net.dugged.csworldedit.Selection.Position.B;
-
 public class CommandSwap extends ClientCommand {
 
 	@Override
@@ -34,44 +34,10 @@ public class CommandSwap extends ClientCommand {
 		return new TextComponentTranslation("text.worldedit.swap.usage").getUnformattedText();
 	}
 
-	public void swapBlocks(World world, Selection selection, IBlockState state1, IBlockState state2,
-						   boolean ignoreBlockState1, boolean preserveMeta, boolean ignoreBlockState2) {
-		Map<BlockPos, IBlockState> blocksToPlace = new HashMap<>();
-		for (BlockPos pos : BlockPos.MutableBlockPos.getAllInBox(selection.getPos(A), selection.getPos(B))) {
-			if (Thread.interrupted()) {
-				return;
-			}
-			IBlockState currentState = world.getBlockState(pos);
-			boolean isState1 = ignoreBlockState1 ? currentState.getBlock() == state1.getBlock() :
-					currentState.equals(state1);
-			boolean isState2 = ignoreBlockState2 ? currentState.getBlock() == state2.getBlock() :
-					currentState.equals(state2);
-			if (isState1) {
-				if (preserveMeta) {
-					int meta = currentState.getBlock().getMetaFromState(currentState);
-					IBlockState newState = state2.getBlock().getStateFromMeta(meta);
-					blocksToPlace.put(pos, newState);
-				} else {
-					blocksToPlace.put(pos, state2);
-				}
-			} else if (isState2) {
-				if (preserveMeta) {
-					int meta = currentState.getBlock().getMetaFromState(currentState);
-					IBlockState newState = state1.getBlock().getStateFromMeta(meta);
-					blocksToPlace.put(pos, newState);
-				} else {
-					blocksToPlace.put(pos, state1);
-				}
-			}
-		}
-		TaskSetBlock task = new TaskSetBlock(blocksToPlace, world);
-		TaskManager.getInstance().addTask(task);
-	}
-
 	@Override
 	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		if (Manager.hasCurrentSelection()) {
-			Selection selection = Manager.getCurrentSelection();
+			Selection selection = Manager.getCurrentSelection().copy();
 			int len = args.length;
 			if (len < 2 || len > 4) {
 				Manager.sendMessage(getUsage(sender));
@@ -122,10 +88,55 @@ public class CommandSwap extends ClientCommand {
 					ignoreBlockState2 = false;
 				}
 			}
-			Thread t = new Thread(() -> swapBlocks(world, selection, state1, state2, ignoreBlockState1, preserveMeta,
-					ignoreBlockState2));
-			t.start();
-			TaskManager.getInstance().threads.add(t);
+			final IBlockState firstState = state1;
+			final IBlockState secondState = state2;
+			final boolean ignoreFirst = ignoreBlockState1;
+			final boolean ignoreSecond = ignoreBlockState2;
+			final boolean keepMeta = preserveMeta;
+			BlockPos min = selection.minPos();
+			BlockPos max = selection.maxPos();
+			SnapshotManager.SubmitResult result = SnapshotManager.getInstance().submitRegion(world,
+					new ClientWorldView(world), min.getX(), min.getY(), min.getZ(), max.getX(), max.getY(),
+					max.getZ(), (snapshot, context) -> {
+						Map<BlockPos, IBlockState> blocksToPlace = new HashMap<>();
+						int work = 0;
+						for (int y = snapshot.minY(); y < snapshot.minY() + snapshot.sizeY(); y++) {
+							for (int z = snapshot.minZ(); z < snapshot.minZ() + snapshot.sizeZ(); z++) {
+								for (int x = snapshot.minX(); x < snapshot.minX() + snapshot.sizeX(); x++) {
+									if ((work++ & 1023) == 0 && context.isCancelled()) {
+										return;
+									}
+									IBlockState currentState = snapshot.get(x, y, z);
+									if (currentState == null) {
+										continue;
+									}
+									boolean isState1 = ignoreFirst ? currentState.getBlock() == firstState.getBlock() :
+											currentState.equals(firstState);
+									boolean isState2 = ignoreSecond ? currentState.getBlock() == secondState.getBlock() :
+											currentState.equals(secondState);
+									BlockPos pos = new BlockPos(x, y, z);
+									if (isState1) {
+										if (keepMeta) {
+											int meta = currentState.getBlock().getMetaFromState(currentState);
+											blocksToPlace.put(pos, secondState.getBlock().getStateFromMeta(meta));
+										} else {
+											blocksToPlace.put(pos, secondState);
+										}
+									} else if (isState2) {
+										if (keepMeta) {
+											int meta = currentState.getBlock().getMetaFromState(currentState);
+											blocksToPlace.put(pos, firstState.getBlock().getStateFromMeta(meta));
+										} else {
+											blocksToPlace.put(pos, firstState);
+										}
+									}
+								}
+							}
+						}
+						context.postClient(clientWorld -> TaskManager.getInstance()
+								.addTask(new TaskSetBlock(blocksToPlace, clientWorld)));
+					});
+			ScanFeedback.report(result, selection);
 		} else {
 			Manager.sendMessage(new TextComponentTranslation("text.worldedit.noAreaSelected"));
 		}
@@ -136,6 +147,14 @@ public class CommandSwap extends ClientCommand {
 										  @Nullable BlockPos pos) {
 		if (args.length == 1 || args.length == 3) {
 			return getListOfStringsMatchingLastWord(args, Block.REGISTRY.getKeys());
+		} else if (args.length == 2) {
+			List<Object> options = new java.util.ArrayList<>();
+			options.addAll(Block.REGISTRY.getKeys());
+			options.add("*");
+			options.add("#");
+			return getListOfStringsMatchingLastWord(args, options);
+		} else if (args.length == 4) {
+			return getListOfStringsMatchingLastWord(args, "*");
 		} else {
 			return Collections.emptyList();
 		}

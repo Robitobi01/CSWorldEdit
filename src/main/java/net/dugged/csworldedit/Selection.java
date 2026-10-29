@@ -82,6 +82,12 @@ public class Selection {
 		return widthX() == 1 && widthY() == 1 && widthZ() == 1;
 	}
 
+	public Selection copy() {
+		Selection copy = new Selection(type);
+		copy.positions.putAll(positions);
+		return copy;
+	}
+
 	public enum SelectionType {
 		WOOD(134, 101, 38), STONE(154, 154, 154), IRON(255, 255, 255), DIAMOND(51, 235, 203), GOLD(234, 238, 87);
 

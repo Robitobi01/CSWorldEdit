@@ -3,12 +3,20 @@ package net.dugged.csworldedit;
 import net.dugged.csworldedit.brushes.BrushBase;
 import net.dugged.csworldedit.clientcommands.ClientCommandHandler;
 import net.dugged.csworldedit.mixins.IItemSword;
+import net.dugged.csworldedit.tasks.TaskClone;
+import net.dugged.csworldedit.tasks.TaskFill;
+import net.dugged.csworldedit.tasks.TaskManager;
 import net.dugged.csworldedit.tasks.TaskRenderer;
+import net.dugged.csworldedit.tasks.TaskReplaceItem;
+import net.dugged.csworldedit.tasks.TaskSetBlock;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemSword;
+import net.minecraft.util.EnumHand;
+import net.minecraftforge.client.event.ClientChatEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
+import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.config.Config;
 import net.minecraftforge.common.config.ConfigManager;
@@ -25,7 +33,7 @@ import org.apache.logging.log4j.Logger;
 import static net.dugged.csworldedit.Selection.Position.A;
 import static net.dugged.csworldedit.Selection.Position.B;
 
-@Mod(modid = Tags.MOD_ID, name = Tags.MOD_NAME, version = Tags.VERSION,
+@Mod(modid = Tags.MOD_ID, name = Tags.MOD_NAME, version = Tags.VERSION, clientSideOnly = true,
 		dependencies = "required-after:cleanroom@[" + Tags.CLEANROOM_VERSION + ",)")
 public class CSWorldEdit {
 
@@ -37,6 +45,7 @@ public class CSWorldEdit {
 	@Mod.EventHandler
 	public void preInit(FMLPreInitializationEvent event) {
 		MinecraftForge.EVENT_BUS.register(this);
+		ConfigCleanup.prune(Tags.MOD_ID);
 	}
 
 	@Mod.EventHandler
@@ -48,12 +57,39 @@ public class CSWorldEdit {
 	public void onConfigChangedEvent(final ConfigChangedEvent.OnConfigChangedEvent event) {
 		if (event.getModID().equals(Tags.MOD_ID)) {
 			ConfigManager.sync(Tags.MOD_ID, Config.Type.INSTANCE);
+			ConfigCleanup.prune(Tags.MOD_ID);
+			if (Configuration.general.enabled) {
+				ClientCommandHandler.updatePermissions();
+			}
 		}
 	}
 
 	@SubscribeEvent
+	public void onClientChat(ClientChatEvent event) {
+		if (!Configuration.general.enabled || mc.player == null || mc.world == null) {
+			return;
+		}
+		UndoManager.getInstance().saveCmdUndo(event.getMessage(), mc.world, mc.player);
+	}
+
+	@SubscribeEvent
+	public void onWorldUnload(WorldEvent.Unload event) {
+		if (!event.getWorld().isRemote) {
+			return;
+		}
+		TaskManager.getInstance().resetForWorldChange();
+		UndoManager.getInstance().clearHistory();
+		Manager.clearAllSelections();
+		TaskSetBlock.setblockPermission = false;
+		TaskFill.fillPermission = false;
+		TaskClone.clonePermission = false;
+		TaskReplaceItem.replaceItemPermission = false;
+		TaskManager.gamerulePermission = false;
+	}
+
+	@SubscribeEvent
 	public void onTick(final TickEvent.ClientTickEvent event) {
-		if (!Configuration.enabled || event.phase != TickEvent.Phase.END) {
+		if (!Configuration.general.enabled || event.phase != TickEvent.Phase.END) {
 			return;
 		}
 		ClientCommandHandler.getInstance().tick();
@@ -63,7 +99,7 @@ public class CSWorldEdit {
 
 	@SubscribeEvent
 	public void render(final RenderWorldLastEvent event) {
-		if (!Configuration.enabled) {
+		if (!Configuration.general.enabled) {
 			return;
 		}
 		Renderer.render(event.getPartialTicks());
@@ -72,7 +108,8 @@ public class CSWorldEdit {
 
 	@SubscribeEvent
 	public void onLeftClickBlock(final PlayerInteractEvent.LeftClickBlock event) {
-		if (!Configuration.enabled) {
+		if (!Configuration.general.enabled || mc.player == null || !(event.getEntityPlayer() instanceof EntityPlayerSP)
+				|| event.getHand() != EnumHand.MAIN_HAND) {
 			return;
 		}
 		Item itemInHand = mc.player.getHeldItemMainhand().getItem();
@@ -94,7 +131,8 @@ public class CSWorldEdit {
 
 	@SubscribeEvent
 	public void onRightClickBlock(final PlayerInteractEvent.RightClickBlock event) {
-		if (!Configuration.enabled) {
+		if (!Configuration.general.enabled || mc.player == null || !(event.getEntityPlayer() instanceof EntityPlayerSP)
+				|| event.getHand() != EnumHand.MAIN_HAND) {
 			return;
 		}
 		Item itemInHand = mc.player.getHeldItemMainhand().getItem();

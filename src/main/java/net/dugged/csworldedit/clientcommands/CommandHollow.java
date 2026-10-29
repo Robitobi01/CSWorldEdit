@@ -52,25 +52,27 @@ public class CommandHollow extends ClientCommand {
 				int thicknessZ = Math.min(thickness, selection.widthZ() - 1);
 
 				List<BlockPosBB> positions = new ArrayList<>();
-				BlockPos pos;
+				int[][] faces = net.dugged.csworldedit.Geometry.hollowFaces(posMin.getX(), posMin.getY(),
+						posMin.getZ(), posMax.getX(), posMax.getY(), posMax.getZ(), thicknessX, thicknessY,
+						thicknessZ);
 				// Front face (posMin.z side)
-				pos = new BlockPos(posMax.getX(), posMax.getY(), posMin.getZ() + thicknessZ);
-				positions.add(new BlockPosBB(posMin, pos));
-				// Left face (posMin.x side)
-				pos = new BlockPos(posMax.getX() + thicknessX, posMax.getY(), posMin.getZ());
-				positions.add(new BlockPosBB(posMin, pos));
-				// Bottom face (posMin.y side)
-				pos = new BlockPos(posMax.getX(), posMax.getY() + thicknessY, posMin.getZ());
-				positions.add(new BlockPosBB(posMin, pos));
+				positions.add(new BlockPosBB(new BlockPos(faces[0][0], faces[0][1], faces[0][2]),
+						new BlockPos(faces[0][3], faces[0][4], faces[0][5])));
 				// Back face (posMax.z side)
-				pos = new BlockPos(posMax.getX(), posMax.getY(), posMin.getZ() - thicknessZ);
-				positions.add(new BlockPosBB(pos, posMax));
+				positions.add(new BlockPosBB(new BlockPos(faces[1][0], faces[1][1], faces[1][2]),
+						new BlockPos(faces[1][3], faces[1][4], faces[1][5])));
+				// Left face (posMin.x side)
+				positions.add(new BlockPosBB(new BlockPos(faces[2][0], faces[2][1], faces[2][2]),
+						new BlockPos(faces[2][3], faces[2][4], faces[2][5])));
 				// Right face (posMax.x side)
-				pos = new BlockPos(posMax.getX(), posMax.getY() - thicknessX, posMin.getZ());
-				positions.add(new BlockPosBB(pos, posMax));
+				positions.add(new BlockPosBB(new BlockPos(faces[3][0], faces[3][1], faces[3][2]),
+						new BlockPos(faces[3][3], faces[3][4], faces[3][5])));
+				// Bottom face (posMin.y side)
+				positions.add(new BlockPosBB(new BlockPos(faces[4][0], faces[4][1], faces[4][2]),
+						new BlockPos(faces[4][3], faces[4][4], faces[4][5])));
 				// Top face (posMax.y side)
-				pos = new BlockPos(posMax.getX(), posMax.getY() - thicknessY, posMin.getZ());
-				positions.add(new BlockPosBB(pos, posMax));
+				positions.add(new BlockPosBB(new BlockPos(faces[5][0], faces[5][1], faces[5][2]),
+						new BlockPos(faces[5][3], faces[5][4], faces[5][5])));
 				UndoSnapshot snapshot = new UndoSnapshot();
 				for (BlockPosBB bb : positions) {
 					TaskFill task = new TaskFill(bb.getPos1(), bb.getPos2(), blockState, sender.getEntityWorld(),

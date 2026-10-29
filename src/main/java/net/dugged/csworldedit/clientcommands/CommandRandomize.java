@@ -57,8 +57,8 @@ public class CommandRandomize extends ClientCommand {
 				blocksToPlace.put(pos, blockState);
 			}
 		}
-		TaskSetBlock task = new TaskSetBlock(blocksToPlace, world);
-		TaskManager.getInstance().addTask(task);
+		TaskManager.getInstance().scheduleClient(
+				() -> TaskManager.getInstance().addTask(new TaskSetBlock(blocksToPlace, world)));
 	}
 
 	@Override
@@ -70,7 +70,8 @@ public class CommandRandomize extends ClientCommand {
 				int percentage = parseInt(args[0], 0, 100);
 				World world = sender.getEntityWorld();
 				List<IBlockState> blockList = parseBlockList(Arrays.copyOfRange(args, 1, args.length), sender);
-				Thread t = new Thread(() -> placeRandomBlocks(world, selection, blockList, percentage));
+				Selection snapshot = selection.copy();
+				Thread t = new Thread(() -> placeRandomBlocks(world, snapshot, blockList, percentage));
 				t.start();
 				TaskManager.getInstance().threads.add(t);
 			} else {
@@ -83,7 +84,7 @@ public class CommandRandomize extends ClientCommand {
 
 	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args,
 										  @Nullable BlockPos pos) {
-		if (args.length == 1) {
+		if (args.length == 2 || (args.length > 2 && args[args.length - 2].endsWith(","))) {
 			return getListOfStringsMatchingLastWord(args, Block.REGISTRY.getKeys());
 		} else {
 			return Collections.emptyList();

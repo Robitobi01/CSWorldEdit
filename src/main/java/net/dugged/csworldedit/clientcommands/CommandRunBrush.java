@@ -3,6 +3,10 @@ package net.dugged.csworldedit.clientcommands;
 import net.dugged.csworldedit.Manager;
 import net.dugged.csworldedit.Selection;
 import net.dugged.csworldedit.brushes.BrushBase;
+import net.dugged.csworldedit.scan.ClientJob;
+import net.dugged.csworldedit.scan.ClientWorldView;
+import net.dugged.csworldedit.scan.ScanFeedback;
+import net.dugged.csworldedit.scan.SnapshotManager;
 import net.dugged.csworldedit.tasks.TaskManager;
 import net.dugged.csworldedit.tasks.TaskSetBlock;
 import net.minecraft.block.Block;
@@ -17,9 +21,6 @@ import net.minecraft.world.World;
 import javax.annotation.Nullable;
 import java.util.*;
 
-import static net.dugged.csworldedit.Selection.Position.A;
-import static net.dugged.csworldedit.Selection.Position.B;
-
 public class CommandRunBrush extends ClientCommand {
 
 	@Override
@@ -30,26 +31,6 @@ public class CommandRunBrush extends ClientCommand {
 	@Override
 	public String getUsage(ICommandSender sender) {
 		return new TextComponentTranslation("text.worldedit.runbrush.usage").getUnformattedText();
-	}
-
-	private void runBrush(World world, Selection selection, IBlockState maskBlockState, BrushBase brush) {
-		List<BlockPos> positions = new ArrayList<>();
-		for (BlockPos pos : BlockPos.getAllInBox(selection.getPos(A), selection.getPos(B))) {
-			if (Thread.interrupted()) {
-				return;
-			}
-			if (world.getBlockState(pos).equals(maskBlockState)) {
-				positions.addAll(brush.run(world, pos));
-			}
-		}
-		if (!positions.isEmpty()) {
-			Map<BlockPos, IBlockState> blocksToPlace = new HashMap<>();
-			for (BlockPos pos : positions) {
-				blocksToPlace.put(pos, brush.getBlockState());
-			}
-			TaskSetBlock task = new TaskSetBlock(blocksToPlace, world);
-			TaskManager.getInstance().addTask(task);
-		}
 	}
 
 	@Override
@@ -76,12 +57,53 @@ public class CommandRunBrush extends ClientCommand {
 						brush.setRadius(parseInt(args[5], 1));
 					}
 					BrushBase finalBrush = brush;
-					Thread t = new Thread(() -> runBrush(sender.getEntityWorld(), Manager.getCurrentSelection(),
-							maskBlockState, finalBrush));
-					t.start();
-					TaskManager.getInstance().threads.add(t);
+					World world = sender.getEntityWorld();
+					Selection selection = Manager.getCurrentSelection().copy();
+					SnapshotManager.SubmitResult result = SnapshotManager.getInstance().submitClientJob(new ClientJob(world) {
+						private final ClientWorldView view = new ClientWorldView(world);
+						private final int minX = selection.minPos().getX();
+						private final int minY = selection.minPos().getY();
+						private final int minZ = selection.minPos().getZ();
+						private final int widthX = selection.widthX();
+						private final int widthY = selection.widthY();
+						private final int widthZ = selection.widthZ();
+						private final long volume = selection.volume();
+						private final List<BlockPos> positions = new ArrayList<>();
+						private long cursor;
+
+						@Override
+						public int step(int budget) {
+							int count = Math.min(Math.min(budget, 64), (int) Math.min(Integer.MAX_VALUE, volume - cursor));
+							for (int i = 0; i < count; i++) {
+								long index = cursor + i;
+								int x = (int) (index % widthX);
+								long rest = index / widthX;
+								int z = (int) (rest % widthZ);
+								int y = (int) (rest / widthZ);
+								BlockPos pos = new BlockPos(minX + x, minY + y, minZ + z);
+								IBlockState state = view.getBlock(pos.getX(), pos.getY(), pos.getZ());
+								if (state != null && state.equals(maskBlockState)) {
+									positions.addAll(finalBrush.run(world, pos));
+								}
+							}
+							cursor += count;
+							if (cursor >= volume) {
+								markFinished();
+								if (!positions.isEmpty()) {
+									Map<BlockPos, IBlockState> blocksToPlace = new HashMap<>();
+									for (BlockPos pos : positions) {
+										blocksToPlace.put(pos, finalBrush.getBlockState());
+									}
+									TaskManager.getInstance().scheduleClient(() -> TaskManager.getInstance()
+											.addTask(new TaskSetBlock(blocksToPlace, world)));
+								}
+							}
+							return count;
+						}
+					});
+					ScanFeedback.report(result);
 				} else {
-					Manager.sendMessage(new TextComponentTranslation("text.worldedit.brush.notFound", args[0]));
+					Manager.sendMessage(new TextComponentTranslation("text.worldedit.brush.notFound", args[2]));
 				}
 			} else {
 				Manager.sendMessage(getUsage(sender));

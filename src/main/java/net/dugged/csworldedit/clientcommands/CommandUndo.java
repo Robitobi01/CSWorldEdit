@@ -25,7 +25,7 @@ public class CommandUndo extends ClientCommand {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return getName();
+		return new TextComponentTranslation("text.worldedit.undo.usage").getUnformattedText();
 	}
 
 	@Override
@@ -57,7 +57,7 @@ public class CommandUndo extends ClientCommand {
 	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args,
 										  @Nullable net.minecraft.util.math.BlockPos pos) {
 		if (args.length == 1) {
-			return getListOfStringsMatchingLastWord(args, "toggle", "redo");
+			return getListOfStringsMatchingLastWord(args, "toggle");
 		} else {
 			return Collections.emptyList();
 		}

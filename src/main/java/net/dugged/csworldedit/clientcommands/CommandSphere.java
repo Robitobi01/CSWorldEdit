@@ -42,9 +42,9 @@ public class CommandSphere extends ClientCommand {
 		blocksToPlace.put(posBottom, state);
 	}
 
-	private void generateSphere(World world, BlockPos center, IBlockState blockState, double radius) {
+	private void generateSphere(World world, int worldHeight, BlockPos center, IBlockState blockState, double radius) {
 		Map<BlockPos, IBlockState> blocksToPlace = new HashMap<>();
-		int yMax = (int) Math.min(radius, world.getHeight() - center.getY());
+		int yMax = net.dugged.csworldedit.Geometry.sphereYMax(center.getY(), worldHeight, radius);
 		for (int x = 0; x <= (int) radius; x++) {
 			for (int y = 0; y <= yMax; y++) {
 				for (int z = 0; z <= (int) radius; z++) {
@@ -62,8 +62,8 @@ public class CommandSphere extends ClientCommand {
 				}
 			}
 		}
-		TaskSetBlock task = new TaskSetBlock(blocksToPlace, world);
-		TaskManager.getInstance().addTask(task);
+		TaskManager.getInstance().scheduleClient(
+				() -> TaskManager.getInstance().addTask(new TaskSetBlock(blocksToPlace, world)));
 	}
 
 	@Override
@@ -75,8 +75,10 @@ public class CommandSphere extends ClientCommand {
 					Block block = getBlockByText(sender, args[0]);
 					IBlockState blockState = convertArgToBlockState(block, args[1]);
 					World world = sender.getEntityWorld();
-					double radius = parseInt(args[2]) + 0.5;
-					Thread t = new Thread(() -> generateSphere(world, selection.getPos(A), blockState, radius));
+					int worldHeight = world.getHeight();
+					BlockPos center = selection.getPos(A);
+					double radius = Math.max(0, parseInt(args[2])) + 0.5;
+					Thread t = new Thread(() -> generateSphere(world, worldHeight, center, blockState, radius));
 					t.start();
 					TaskManager.getInstance().threads.add(t);
 				} else {

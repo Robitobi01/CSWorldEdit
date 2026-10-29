@@ -38,11 +38,16 @@ public class CommandSelection extends ClientCommand {
 			Manager.clearAllSelections();
 			Manager.sendMessage(new TextComponentTranslation("text.worldedit.selection.cleared"));
 		} else if (args.length == 1 && (args[0].toLowerCase().matches("center") || args[0].toLowerCase().matches("ce"))) {
+			if (!Manager.hasCurrentSelection()) {
+				Manager.sendMessage(new TextComponentTranslation("text.worldedit.noAreaSelected"));
+				return;
+			}
 			Selection selection = Manager.getCurrentSelection();
 			BlockPos center1 = new BlockPos(selection.minPos().getX() + selection.widthX() / 2,
 					selection.minPos().getY(), selection.minPos().getZ() + selection.widthZ() / 2);
 			BlockPos center2 =
-					center1.up(selection.widthY() - 1).west(selection.widthZ() % 2 == 0 ? 1 : 0).north(selection.widthX() % 2 == 0 ? 1 : 0);
+					center1.up(selection.widthY() - 1).west(selection.widthX() % 2 == 0 ? 1 : 0)
+							.north(selection.widthZ() % 2 == 0 ? 1 : 0);
 			selection.setPos(Position.A, center1);
 			selection.setPos(Position.B, center2);
 			Manager.sendMessage(new TextComponentTranslation("text.worldedit.selection.centered"));
@@ -132,7 +137,7 @@ public class CommandSelection extends ClientCommand {
 										  @Nullable BlockPos pos) {
 		if (args.length == 1) {
 			return getListOfStringsMatchingLastWord(args, "expand", "move", "clear", "center", "grow", "shrink");
-		} else if (args.length == 2) {
+		} else if (args.length == 2 && (args[0].equalsIgnoreCase("expand") || args[0].equalsIgnoreCase("move"))) {
 			return getListOfStringsMatchingLastWord(args, "up", "down", "north", "east", "south", "west");
 		} else {
 			return Collections.emptyList();

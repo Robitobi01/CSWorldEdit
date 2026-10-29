@@ -8,7 +8,12 @@ import net.minecraft.item.Item;
 import net.minecraft.item.Item.ToolMaterial;
 import net.minecraft.item.ItemSword;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentTranslation;
+
+import javax.annotation.Nullable;
+import java.util.Collections;
+import java.util.List;
 
 import static net.dugged.csworldedit.Selection.Position.A;
 import static net.dugged.csworldedit.Selection.Position.B;
@@ -52,6 +57,16 @@ public class CommandPos extends ClientCommand {
 			}
 		} else {
 			Manager.sendMessage(getUsage(sender));
+		}
+	}
+
+	@Override
+	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args,
+										  @Nullable BlockPos pos) {
+		if (args.length == 1) {
+			return getListOfStringsMatchingLastWord(args, "0", "1");
+		} else {
+			return Collections.emptyList();
 		}
 	}
 }

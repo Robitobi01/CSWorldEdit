@@ -1,7 +1,12 @@
 package net.dugged.csworldedit.tasks;
 
+import net.dugged.csworldedit.Configuration;
 import net.dugged.csworldedit.UndoManager;
 import net.dugged.csworldedit.UndoSnapshot;
+import net.dugged.csworldedit.sp.SPCloneOperation;
+import net.dugged.csworldedit.sp.SPEditBackend;
+import net.dugged.csworldedit.sp.SPEditJob;
+import net.dugged.csworldedit.sp.SPOperation;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -23,19 +28,26 @@ public class TaskClone extends TaskChunk {
 	private int processedOps = 0;
 
 	public TaskClone(BlockPos src1, BlockPos src2, BlockPos dstOrigin, World world, Mode mode) {
-		this(src1, src2, dstOrigin, world, mode, new UndoSnapshot());
-		UndoManager.getInstance().pushSnapshot(snapshot);
+		this(src1, src2, dstOrigin, world, mode, new UndoSnapshot(), true);
 	}
 
 	public TaskClone(BlockPos src1, BlockPos src2, BlockPos dstOrigin, World world, Mode mode, UndoSnapshot snapshot) {
+		this(src1, src2, dstOrigin, world, mode, snapshot, false);
+	}
+
+	private TaskClone(BlockPos src1, BlockPos src2, BlockPos dstOrigin, World world, Mode mode, UndoSnapshot snapshot,
+					  boolean autoPush) {
 		this.mode = mode;
-		this.snapshot = snapshot;
+		this.snapshot = snapshot == null ? new UndoSnapshot() : snapshot;
 		BlockPos minSrc = getMinPos(src1, src2);
 		BlockPos maxSrc = getMaxPos(src1, src2);
 		sourceRegion = new AxisAlignedBB((minSrc.getX() & ~15), 0, (minSrc.getZ() & ~15), ((maxSrc.getX() | 15) + 1),
 				256, ((maxSrc.getZ() | 15) + 1));
 		BlockPos maxDst = dstOrigin.add(maxSrc.subtract(minSrc));
-		snapshot.recordRegion(dstOrigin, maxDst, world);
+		boolean directPossible = Configuration.direct.enabled && SPEditBackend.isAvailable(world);
+		if (!directPossible) {
+			this.snapshot.recordRegion(dstOrigin, maxDst, world);
+		}
 
 		BlockPos delta = dstOrigin.subtract(minSrc);
 		AxisAlignedBB sourceBB = new AxisAlignedBB(minSrc, maxSrc.add(1, 1, 1));
@@ -120,10 +132,40 @@ public class TaskClone extends TaskChunk {
 		}
 
 		this.totalOps = tempOperationsList.size();
+		if (directPossible) {
+			List<SPOperation> operations = new ArrayList<>();
+			for (ChunkPos cp : orderedDestinationChunks) {
+				Queue<CloneOperation> queue = opsMap.get(cp);
+				if (queue == null) {
+					continue;
+				}
+				for (CloneOperation op : queue) {
+					operations.add(new SPCloneOperation(new BlockPos(op.x1, op.y1, op.z1),
+							new BlockPos(op.x2, op.y2, op.z2), new BlockPos(op.x3, op.y3, op.z3),
+							SPCloneOperation.Mode.valueOf(mode.name())));
+				}
+			}
+			SPEditJob job = SPEditBackend.getInstance().createJob(world, operations, true,
+					autoPush ? null : this.snapshot);
+			if (job != null) {
+				if (!autoPush) {
+					this.snapshot.markPending();
+				}
+				useDirectJob(job);
+				return;
+			}
+			this.snapshot.recordRegion(dstOrigin, maxDst, world);
+		}
+		if (autoPush) {
+			UndoManager.getInstance().pushSnapshot(this.snapshot);
+		}
 	}
 
 	@Override
 	public int processChunk(ChunkPos pos, int maxPackets) {
+		if (isDirectMode()) {
+			return 0;
+		}
 		int count = 0;
 		Queue<CloneOperation> queue = opsMap.get(pos);
 		if (queue == null || !TaskClone.clonePermission) {
@@ -155,22 +197,22 @@ public class TaskClone extends TaskChunk {
 
 	@Override
 	public int getTotalOperations() {
-		return totalOps;
+		return isDirectMode() ? directTotal() : totalOps;
 	}
 
 	@Override
 	public int getProcessedOperations() {
-		return processedOps;
+		return isDirectMode() ? directProcessed() : processedOps;
 	}
 
 	@Override
 	public Set<ChunkPos> getPendingChunks() {
-		return opsMap.keySet();
+		return isDirectMode() ? directChunks() : opsMap.keySet();
 	}
 
 	@Override
 	public boolean isComplete() {
-		return opsMap.isEmpty();
+		return isDirectMode() ? directDone() : opsMap.isEmpty();
 	}
 
 	public AxisAlignedBB getSourceRegion() {

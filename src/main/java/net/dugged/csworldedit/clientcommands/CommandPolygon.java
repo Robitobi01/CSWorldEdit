@@ -82,8 +82,8 @@ public class CommandPolygon extends ClientCommand {
 				blocksToPlace.put(pos, blockState);
 			}
 		}
-		TaskSetBlock task = new TaskSetBlock(blocksToPlace, world);
-		TaskManager.getInstance().addTask(task);
+		TaskManager.getInstance().scheduleClient(
+				() -> TaskManager.getInstance().addTask(new TaskSetBlock(blocksToPlace, world)));
 	}
 
 	@Override
@@ -98,8 +98,8 @@ public class CommandPolygon extends ClientCommand {
 					int radius = parseInt(args[2]);
 					int points = parseInt(args[3]);
 					boolean halfStep = args.length == 5 && parseBoolean(args[4]);
-					Thread t = new Thread(() -> generatePolygon(world, selection.getPos(A), blockState, radius, points
-							, halfStep));
+					BlockPos center = selection.getPos(A);
+					Thread t = new Thread(() -> generatePolygon(world, center, blockState, radius, points, halfStep));
 					t.start();
 					TaskManager.getInstance().threads.add(t);
 				} else {

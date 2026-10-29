@@ -62,8 +62,11 @@ public class CommandCone extends ClientCommand {
 
 	private void generateCone(World world, Selection selection, IBlockState blockState, int startRadius, int endRadius
 			, int height, double bezierA, double bezierB) {
-		List<BlockPosBB> positions = generateCircleBBoxes(selection.minPos().down(height - 1), startRadius);
-		for (int i = 1; i <= height; i++) {
+		double firstT = 1.0D / height;
+		int baseRadius = Math.max(startRadius,
+				calculateBezierValue(startRadius, endRadius, bezierA, bezierB, firstT));
+		List<BlockPosBB> positions = generateCircleBBoxes(selection.minPos().down(height - 1), baseRadius);
+		for (int i = 2; i <= height; i++) {
 			if (Thread.interrupted()) {
 				return;
 			}
@@ -71,12 +74,14 @@ public class CommandCone extends ClientCommand {
 			int currentRadius = calculateBezierValue(startRadius, endRadius, bezierA, bezierB, t);
 			positions.addAll(generateCircleBBoxes(selection.minPos().down(height - i), currentRadius));
 		}
-		UndoSnapshot snapshot = new UndoSnapshot();
-		for (BlockPosBB bb : positions) {
-			TaskFill task = new TaskFill(bb.getPos1(), bb.getPos2(), blockState, world, snapshot);
-			TaskManager.getInstance().addTask(task);
-		}
-		UndoManager.getInstance().pushSnapshot(snapshot);
+		TaskManager.getInstance().scheduleClient(() -> {
+			UndoSnapshot snapshot = new UndoSnapshot();
+			for (BlockPosBB bb : positions) {
+				TaskFill task = new TaskFill(bb.getPos1(), bb.getPos2(), blockState, world, snapshot);
+				TaskManager.getInstance().addTask(task);
+			}
+			UndoManager.getInstance().pushSnapshot(snapshot);
+		});
 	}
 
 	@Override
@@ -93,7 +98,8 @@ public class CommandCone extends ClientCommand {
 					int height = Math.max(1, parseInt(args[4]));
 					double bezierA = parseDouble(args[5]);
 					double bezierB = parseDouble(args[6]);
-					Thread t = new Thread(() -> generateCone(world, selection, blockState, startRadius, endRadius,
+					Selection snapshot = selection.copy();
+					Thread t = new Thread(() -> generateCone(world, snapshot, blockState, startRadius, endRadius,
 							height, bezierA, bezierB));
 					t.start();
 					TaskManager.getInstance().threads.add(t);

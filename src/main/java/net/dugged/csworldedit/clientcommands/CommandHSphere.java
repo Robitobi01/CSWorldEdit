@@ -33,10 +33,12 @@ public class CommandHSphere extends ClientCommand {
 		return new TextComponentTranslation("text.worldedit.hsphere.usage").getUnformattedText();
 	}
 
-	private void generateHollowSphere(World world, BlockPos center, IBlockState blockState, double radius) {
+	private void generateHollowSphere(World world, int worldHeight, BlockPos center, IBlockState blockState,
+									  double radius) {
 		Map<BlockPos, IBlockState> blocksToPlace = new HashMap<>();
+		double yMax = net.dugged.csworldedit.Geometry.sphereYMax(center.getY(), worldHeight, radius);
 		for (double x = 0; x <= radius; x++) {
-			for (double y = 0; y <= Math.min(radius, world.getHeight() - center.getY()); y++) {
+			for (double y = 0; y <= yMax; y++) {
 				for (double z = 0; z <= radius; z++) {
 					if (Thread.interrupted()) {
 						return;
@@ -66,8 +68,8 @@ public class CommandHSphere extends ClientCommand {
 				}
 			}
 		}
-		TaskSetBlock task = new TaskSetBlock(blocksToPlace, world);
-		TaskManager.getInstance().addTask(task);
+		TaskManager.getInstance().scheduleClient(
+				() -> TaskManager.getInstance().addTask(new TaskSetBlock(blocksToPlace, world)));
 	}
 
 	@Override
@@ -79,8 +81,10 @@ public class CommandHSphere extends ClientCommand {
 					Block block = getBlockByText(sender, args[0]);
 					IBlockState blockState = convertArgToBlockState(block, args[1]);
 					World world = sender.getEntityWorld();
-					double radius = parseInt(args[2]) + 0.5;
-					Thread t = new Thread(() -> generateHollowSphere(world, selection.getPos(A), blockState, radius));
+					int worldHeight = world.getHeight();
+					BlockPos center = selection.getPos(A);
+					double radius = Math.max(0, parseInt(args[2])) + 0.5;
+					Thread t = new Thread(() -> generateHollowSphere(world, worldHeight, center, blockState, radius));
 					t.start();
 					TaskManager.getInstance().threads.add(t);
 				} else {

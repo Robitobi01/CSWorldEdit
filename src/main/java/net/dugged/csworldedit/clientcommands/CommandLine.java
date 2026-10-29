@@ -111,8 +111,8 @@ public class CommandLine extends ClientCommand {
 				blocksToPlace.put(new BlockPos(x1, y1, z1), blockState);
 			}
 		}
-		TaskSetBlock task = new TaskSetBlock(blocksToPlace, world);
-		TaskManager.getInstance().addTask(task);
+		TaskManager.getInstance().scheduleClient(
+				() -> TaskManager.getInstance().addTask(new TaskSetBlock(blocksToPlace, world)));
 	}
 
 	@Override
@@ -131,7 +131,8 @@ public class CommandLine extends ClientCommand {
 					blockState = block.getDefaultState();
 				}
 				World world = sender.getEntityWorld();
-				Thread t = new Thread(() -> placeLine(world, selection, blockState));
+				Selection snapshot = selection.copy();
+				Thread t = new Thread(() -> placeLine(world, snapshot, blockState));
 				t.start();
 				TaskManager.getInstance().threads.add(t);
 			} else {

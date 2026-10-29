@@ -23,6 +23,8 @@ import java.util.Map;
 import static net.dugged.csworldedit.Selection.Position.A;
 
 public class CommandDiagLine extends ClientCommand {
+	private static final int[] TUNNEL_WIDTHS = new int[]{13, 15, 15, 15, 21, 25, 25, 27, 27, 27, 25, 13, 9};
+
 	@Override
 	public String getName() {
 		return "diagline";
@@ -95,9 +97,12 @@ public class CommandDiagLine extends ClientCommand {
 		BlockPos intersection = getIntersection(inputPos, config);
 		BlockPos startPos = getSnappedStart(intersection, config);
 
-		int dx, dz;
 		int wdx = config[0];
 		int wdz = config[1];
+		boolean breakAlongZ = wdx != wdz;
+
+		int dx;
+		int dz;
 
 		if (wdx == wdz) {
 			if (inputPos.getX() < startPos.getX()) {
@@ -117,33 +122,81 @@ public class CommandDiagLine extends ClientCommand {
 			}
 		}
 
-		BlockPos current = startPos;
-		double currentDistSq = current.distanceSq(inputPos);
+		int diffX = inputPos.getX() - startPos.getX();
+		int diffZ = inputPos.getZ() - startPos.getZ();
 
-		while (true) {
-			setBlocks(blockState, blocksToPlace, current);
-			BlockPos next = current.add(dx, 0, dz);
-			double nextDistSq = next.distanceSq(inputPos);
-			if (nextDistSq >= currentDistSq) {
-				break;
-			}
-			current = next;
-			currentDistSq = nextDistSq;
+		int stepsX = -1;
+		if (diffX == 0) {
+			stepsX = 0;
+		} else if (Integer.signum(diffX) == Integer.signum(dx)) {
+			stepsX = Math.abs(diffX);
+		}
+
+		int stepsZ = -1;
+		if (diffZ == 0) {
+			stepsZ = 0;
+		} else if (Integer.signum(diffZ) == Integer.signum(dz)) {
+			stepsZ = Math.abs(diffZ);
+		}
+
+		int maxSteps;
+		if (stepsX >= 0 && stepsZ >= 0) {
+			maxSteps = Math.max(stepsX, stepsZ);
+		} else if (stepsX >= 0) {
+			maxSteps = stepsX;
+		} else {
+			maxSteps = stepsZ;
+		}
+
+		BlockPos current = startPos;
+		for (int i = 0; i <= maxSteps; i++) {
+			setBlocks(blockState, blocksToPlace, current, breakAlongZ);
 			if (Thread.interrupted()) {
 				return;
 			}
+			if (i < maxSteps) {
+				current = current.add(dx, 0, dz);
+			}
 		}
+
+		if (blocksToPlace.isEmpty()) {
+			return;
+		}
+
+		removeMainDiagonalOverlap(blocksToPlace, startPos, config);
+
+		BlockPos selectedCenter = new BlockPos(inputPos.getX(), 10, inputPos.getZ());
+		blocksToPlace.put(selectedCenter, blockState);
+
 		if (!blocksToPlace.isEmpty()) {
-			TaskSetBlock task = new TaskSetBlock(blocksToPlace, world);
-			TaskManager.getInstance().addTask(task);
+			TaskManager.getInstance().scheduleClient(
+					() -> TaskManager.getInstance().addTask(new TaskSetBlock(blocksToPlace, world)));
 		}
 	}
 
-	private void setBlocks(IBlockState blockState, Map<BlockPos, IBlockState> blocksToPlace, BlockPos current) {
-		for (int ox = -1; ox <= 1; ox++) {
-			for (int oy = -1; oy <= 1; oy++) {
-				BlockPos pos = new BlockPos(current.getX() + ox, current.getY() + oy, current.getZ());
-				if (ox == 0 && oy == 0) {
+
+	private void setBlocks(IBlockState blockState, Map<BlockPos, IBlockState> blocksToPlace, BlockPos current,
+						   boolean breakAlongZ) {
+		int baseY = 7;
+		int centerY = 10;
+
+		for (int i = 0; i < TUNNEL_WIDTHS.length; i++) {
+			int y = baseY + i;
+			int width = TUNNEL_WIDTHS[i];
+			int half = width / 2;
+
+			for (int o = -half; o <= half; o++) {
+				int x = current.getX();
+				int z = current.getZ();
+
+				if (breakAlongZ) {
+					z += o;
+				} else {
+					x += o;
+				}
+
+				BlockPos pos = new BlockPos(x, y, z);
+				if (y == centerY && o == 0) {
 					blocksToPlace.put(pos, blockState);
 				} else {
 					blocksToPlace.put(pos, Blocks.AIR.getDefaultState());
@@ -151,6 +204,82 @@ public class CommandDiagLine extends ClientCommand {
 			}
 		}
 	}
+
+	private void removeMainDiagonalOverlap(Map<BlockPos, IBlockState> blocksToPlace, BlockPos startPos, int[] config) {
+		if (blocksToPlace.isEmpty()) {
+			return;
+		}
+
+		int minX = Integer.MAX_VALUE;
+		int minZ = Integer.MAX_VALUE;
+		int maxX = Integer.MIN_VALUE;
+		int maxZ = Integer.MIN_VALUE;
+
+		for (BlockPos pos : blocksToPlace.keySet()) {
+			int x = pos.getX();
+			int z = pos.getZ();
+			if (x < minX) minX = x;
+			if (x > maxX) maxX = x;
+			if (z < minZ) minZ = z;
+			if (z > maxZ) maxZ = z;
+		}
+
+		int pad = 13;
+		int wdx = config[0];
+		int wdz = config[1];
+		boolean breakAlongZ = wdx != wdz;
+
+		int t = 0;
+		while (true) {
+			BlockPos center = startPos.add(wdx * t, 0, wdz * t);
+			if (!isCenterWithinBounds(center, minX, maxX, minZ, maxZ, pad)) {
+				break;
+			}
+			removeTunnelSlice(blocksToPlace, center, breakAlongZ);
+			t++;
+		}
+
+		t = -1;
+		while (true) {
+			BlockPos center = startPos.add(wdx * t, 0, wdz * t);
+			if (!isCenterWithinBounds(center, minX, maxX, minZ, maxZ, pad)) {
+				break;
+			}
+			removeTunnelSlice(blocksToPlace, center, breakAlongZ);
+			t--;
+		}
+	}
+
+	private boolean isCenterWithinBounds(BlockPos center, int minX, int maxX, int minZ, int maxZ, int pad) {
+		int x = center.getX();
+		int z = center.getZ();
+		return x >= minX - pad && x <= maxX + pad && z >= minZ - pad && z <= maxZ + pad;
+	}
+
+	private void removeTunnelSlice(Map<BlockPos, IBlockState> blocksToPlace, BlockPos current, boolean breakAlongZ) {
+		int baseY = 7;
+
+		for (int i = 0; i < TUNNEL_WIDTHS.length; i++) {
+			int y = baseY + i;
+			int width = TUNNEL_WIDTHS[i];
+			int half = width / 2;
+
+			for (int o = -half; o <= half; o++) {
+				int x = current.getX();
+				int z = current.getZ();
+
+				if (breakAlongZ) {
+					z += o;
+				} else {
+					x += o;
+				}
+
+				BlockPos pos = new BlockPos(x, y, z);
+				blocksToPlace.remove(pos);
+			}
+		}
+	}
+
 
 	@Override
 	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {

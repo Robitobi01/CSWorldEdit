@@ -1,5 +1,9 @@
 package net.dugged.csworldedit.tasks;
 
+import net.dugged.csworldedit.Configuration;
+import net.dugged.csworldedit.sp.SPEditBackend;
+import net.dugged.csworldedit.sp.SPEditJob;
+import net.dugged.csworldedit.sp.SPReplaceItemOperation;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockDispenser;
 import net.minecraft.block.BlockHopper;
@@ -18,6 +22,19 @@ public class TaskReplaceItem extends TaskChunk {
 	private int processedOps = 0;
 
 	public TaskReplaceItem(Map<BlockPos, ItemStack> containers, World world) {
+		this.totalOps = containers.size();
+		if (Configuration.direct.enabled && !containers.isEmpty()) {
+			List<SPReplaceItemOperation.Entry> entries = new ArrayList<>(containers.size());
+			for (Map.Entry<BlockPos, ItemStack> entry : containers.entrySet()) {
+				entries.add(new SPReplaceItemOperation.Entry(entry.getKey(), entry.getValue()));
+			}
+			SPEditJob job = SPEditBackend.getInstance().createJob(world,
+					Collections.singletonList(new SPReplaceItemOperation(entries)), true);
+			if (job != null) {
+				useDirectJob(job);
+				return;
+			}
+		}
 		for (Map.Entry<BlockPos, ItemStack> entry : containers.entrySet()) {
 			BlockPos pos = entry.getKey();
 			ItemStack stack = entry.getValue();
@@ -26,7 +43,6 @@ public class TaskReplaceItem extends TaskChunk {
 			ChunkPos cp = new ChunkPos(pos);
 			opsMap.computeIfAbsent(cp, k -> new LinkedList<>()).offer(op);
 		}
-		totalOps = containers.size();
 	}
 
 	private int getContainerSize(Block block) {
@@ -41,21 +57,28 @@ public class TaskReplaceItem extends TaskChunk {
 
 	@Override
 	public int processChunk(ChunkPos pos, int maxPackets) {
+		if (isDirectMode()) {
+			return 0;
+		}
 		int count = 0;
 		Queue<ReplaceItemOperation> queue = opsMap.get(pos);
 		if (queue == null || !replaceItemPermission) {
 			return 0;
 		}
 		while (count < maxPackets && !queue.isEmpty()) {
-			ReplaceItemOperation op = queue.poll();
-			for (int slot = 0; slot < op.inventorySize; slot++) {
+			ReplaceItemOperation op = queue.peek();
+			while (count < maxPackets && op.nextSlot < op.inventorySize) {
 				String cmd = String.format("/replaceitem block %d %d %d slot.container.%d %s %d %d", op.pos.getX(),
-						op.pos.getY(), op.pos.getZ(), slot, op.stack.getItem().getRegistryName().toString(),
+						op.pos.getY(), op.pos.getZ(), op.nextSlot, op.stack.getItem().getRegistryName().toString(),
 						op.stack.getCount(), op.stack.getItemDamage());
 				sendCommand(cmd);
+				op.nextSlot++;
+				count++;
 			}
-			processedOps++;
-			count++;
+			if (op.nextSlot >= op.inventorySize) {
+				queue.poll();
+				processedOps++;
+			}
 		}
 		if (queue.isEmpty()) {
 			opsMap.remove(pos);
@@ -65,22 +88,22 @@ public class TaskReplaceItem extends TaskChunk {
 
 	@Override
 	public int getTotalOperations() {
-		return totalOps;
+		return isDirectMode() ? directTotal() : totalOps;
 	}
 
 	@Override
 	public int getProcessedOperations() {
-		return processedOps;
+		return isDirectMode() ? directProcessed() : processedOps;
 	}
 
 	@Override
 	public Set<ChunkPos> getPendingChunks() {
-		return opsMap.keySet();
+		return isDirectMode() ? directChunks() : opsMap.keySet();
 	}
 
 	@Override
 	public boolean isComplete() {
-		return opsMap.isEmpty();
+		return isDirectMode() ? directDone() : opsMap.isEmpty();
 	}
 
 	public static class ReplaceItemOperation {
@@ -88,6 +111,7 @@ public class TaskReplaceItem extends TaskChunk {
 		public final BlockPos pos;
 		public final ItemStack stack;
 		public final int inventorySize;
+		private int nextSlot = 0;
 
 		public ReplaceItemOperation(BlockPos pos, ItemStack stack, int inventorySize) {
 			this.pos = pos;

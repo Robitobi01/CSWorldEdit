@@ -1,8 +1,10 @@
 package net.dugged.csworldedit.clientcommands;
 
 import net.dugged.csworldedit.Manager;
-import net.dugged.csworldedit.tasks.TaskManager;
-import net.minecraft.block.Block;
+import net.dugged.csworldedit.scan.ClientJob;
+import net.dugged.csworldedit.scan.ClientWorldView;
+import net.dugged.csworldedit.scan.ScanFeedback;
+import net.dugged.csworldedit.scan.SnapshotManager;
 import net.minecraft.block.BlockAir;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.command.CommandException;
@@ -14,9 +16,12 @@ import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.World;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Queue;
+import java.util.Set;
 
 public class CommandPerimeterVolume extends ClientCommand {
 
@@ -34,55 +39,68 @@ public class CommandPerimeterVolume extends ClientCommand {
 		return new TextComponentTranslation("text.worldedit.perimetervolume.usage").getUnformattedText();
 	}
 
-	private void checkNeighbor(World world, BlockPos startPos, int radius, BlockPos neighbor,
-							   List<BlockPos> blocksToCheck, List<BlockPos> checkedBlocks) {
-		if (world.isBlockLoaded(neighbor) && world.getBlockState(neighbor).getBlock() instanceof BlockAir && Manager.checkCircle(neighbor.getX() - startPos.getX(), neighbor.getZ() - startPos.getZ(), radius)) {
-			if (!checkedBlocks.contains(neighbor)) {
-				blocksToCheck.add(neighbor);
-				checkedBlocks.add(neighbor);
-			}
-		}
-	}
-
-	private void countBlocks(World world, BlockPos startPos, int radius, int minY) {
-		List<BlockPos> checkedBlocks = new ArrayList<>();
-		List<BlockPos> blocksToCheck = new ArrayList<>();
-		blocksToCheck.add(startPos);
-		checkedBlocks.add(startPos);
-		int count = 0;
-		while (!blocksToCheck.isEmpty()) {
-			if (Thread.interrupted()) {
-				return;
-			}
-			BlockPos pos = blocksToCheck.get(0);
-			checkNeighbor(world, startPos, radius, pos.north(), blocksToCheck, checkedBlocks);
-			checkNeighbor(world, startPos, radius, pos.east(), blocksToCheck, checkedBlocks);
-			checkNeighbor(world, startPos, radius, pos.south(), blocksToCheck, checkedBlocks);
-			checkNeighbor(world, startPos, radius, pos.west(), blocksToCheck, checkedBlocks);
-			BlockPos currentPos = pos;
-			while (currentPos.getY() >= minY) {
-				final IBlockState block = world.getBlockState(currentPos);
-				if (block.isNormalCube() && !block.getBlock().equals(Blocks.BEDROCK)) {
-					count++;
-				}
-				currentPos = currentPos.down();
-			}
-			blocksToCheck.remove(0);
-		}
-		Manager.sendMessage(new TextComponentTranslation("text.worldedit.perimetervolume.response", count));
-	}
-
 	@Override
 	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		if (args.length == 0 || args.length == 1 || args.length == 2) {
 			World world = sender.getEntityWorld();
 			BlockPos pos = Manager.playerPos();
-			if (world.getBlockState(pos).getBlock() instanceof BlockAir) {
-				int radius = (args.length >= 1) ? parseInt(args[0]) : 100;
+			ClientWorldView view = new ClientWorldView(world);
+			IBlockState initial = view.getBlock(pos.getX(), pos.getY(), pos.getZ());
+			if (initial != null && initial.getBlock() instanceof BlockAir) {
+				int radius = Math.max(0, (args.length >= 1) ? parseInt(args[0]) : 100);
 				int minY = (args.length == 2) ? parseInt(args[1]) : 0;
-				Thread t = new Thread(() -> countBlocks(world, pos, radius, minY));
-				t.start();
-				TaskManager.getInstance().threads.add(t);
+				minY = Math.max(0, Math.min(minY, world.getHeight() - 1));
+				int finalMinY = minY;
+				SnapshotManager.SubmitResult result = SnapshotManager.getInstance().submitClientJob(
+						new ClientJob(world) {
+							private final ClientWorldView reader = new ClientWorldView(world);
+							private final Set<BlockPos> checkedBlocks = new HashSet<>();
+							private final Queue<BlockPos> blocksToCheck = new ArrayDeque<>();
+							private int count;
+
+							{
+								checkedBlocks.add(pos);
+								blocksToCheck.add(pos);
+							}
+
+							@Override
+							public int step(int budget) {
+								int processed = Math.min(budget, 64);
+								for (int i = 0; i < processed && !blocksToCheck.isEmpty(); i++) {
+									BlockPos current = blocksToCheck.poll();
+									addNeighbor(current.north());
+									addNeighbor(current.east());
+									addNeighbor(current.south());
+									addNeighbor(current.west());
+									BlockPos scan = current;
+									while (scan.getY() >= finalMinY) {
+										IBlockState block = reader.getBlock(scan.getX(), scan.getY(), scan.getZ());
+										if (block != null && block.isNormalCube() && !block.getBlock().equals(Blocks.BEDROCK)) {
+											count++;
+										}
+										scan = scan.down();
+									}
+								}
+								if (blocksToCheck.isEmpty()) {
+									markFinished();
+									final int total = count;
+									net.dugged.csworldedit.tasks.TaskManager.getInstance().scheduleClient(() -> Manager
+											.sendMessage(new TextComponentTranslation("text.worldedit.perimetervolume.response", total)));
+								}
+								return processed;
+							}
+
+							private void addNeighbor(BlockPos neighbor) {
+								IBlockState state = reader.getBlock(neighbor.getX(), neighbor.getY(), neighbor.getZ());
+								if (state != null && state.getBlock() instanceof BlockAir
+										&& Manager.checkCircle(neighbor.getX() - pos.getX(), neighbor.getZ() - pos.getZ(), radius)) {
+									if (checkedBlocks.add(neighbor)) {
+										blocksToCheck.add(neighbor);
+									}
+								}
+							}
+						});
+				ScanFeedback.report(result);
 			} else {
 				Manager.sendMessage(new TextComponentTranslation("text.worldedit.floodfill.noSpaceToFlood"));
 			}
@@ -94,10 +112,6 @@ public class CommandPerimeterVolume extends ClientCommand {
 	@Override
 	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args,
 										  @Nullable BlockPos pos) {
-		if (args.length == 1) {
-			return getListOfStringsMatchingLastWord(args, Block.REGISTRY.getKeys());
-		} else {
-			return Collections.emptyList();
-		}
+		return Collections.emptyList();
 	}
 }

@@ -2,6 +2,9 @@ package net.dugged.csworldedit.clientcommands;
 
 import net.dugged.csworldedit.Manager;
 import net.dugged.csworldedit.Selection;
+import net.dugged.csworldedit.scan.ClientWorldView;
+import net.dugged.csworldedit.scan.ScanFeedback;
+import net.dugged.csworldedit.scan.SnapshotManager;
 import net.dugged.csworldedit.tasks.TaskManager;
 import net.dugged.csworldedit.tasks.TaskSetBlock;
 import net.minecraft.block.state.IBlockState;
@@ -27,41 +30,50 @@ public class CommandFlip extends ClientCommand {
 		return new TextComponentTranslation("text.worldedit.flip.usage").getUnformattedText();
 	}
 
-	private void flipSelection(World world, Selection selection) {
-		EnumFacing direction = Manager.getFacingDirection();
-		Map<BlockPos, IBlockState> blockList = new HashMap<>();
-		for (int x = 0; x < selection.widthX(); x++) {
-			for (int y = 0; y < selection.widthY(); y++) {
-				for (int z = 0; z < selection.widthZ(); z++) {
-					if (Thread.interrupted()) {
-						return;
-					}
-					IBlockState blockState = world.getBlockState(selection.minPos().add(x, y, z));
-					BlockPos target;
-					if (direction.getAxis() == EnumFacing.Axis.Y) {
-						target = selection.minPos().add(x, selection.widthY() - y - 1, z);
-					} else if (direction.getAxis() == EnumFacing.Axis.Z) {
-						target = selection.minPos().add(x, y, selection.widthZ() - z - 1);
-					} else {
-						target = selection.minPos().add(selection.widthX() - x - 1, y, z);
-					}
-					blockList.put(target, Manager.flipBlockstate(blockState, direction.getAxis()));
-				}
-			}
-		}
-		TaskSetBlock task = new TaskSetBlock(blockList, world);
-		TaskManager.getInstance().addTask(task);
-	}
-
 	@Override
 	public void execute(MinecraftServer server, ICommandSender sender, String[] args) {
 		if (args.length == 0) {
 			if (Manager.hasCurrentSelection()) {
-				Selection selection = Manager.getCurrentSelection();
+				Selection selection = Manager.getCurrentSelection().copy();
 				World world = sender.getEntityWorld();
-				Thread t = new Thread(() -> flipSelection(world, selection));
-				t.start();
-				TaskManager.getInstance().threads.add(t);
+				EnumFacing direction = Manager.getFacingDirection();
+				BlockPos min = selection.minPos();
+				BlockPos max = selection.maxPos();
+				final int widthX = selection.widthX();
+				final int widthY = selection.widthY();
+				final int widthZ = selection.widthZ();
+				SnapshotManager.SubmitResult result = SnapshotManager.getInstance().submitRegion(world,
+						new ClientWorldView(world), min.getX(), min.getY(), min.getZ(), max.getX(), max.getY(),
+						max.getZ(), (snapshot, context) -> {
+							Map<BlockPos, IBlockState> blockList = new HashMap<>();
+							int work = 0;
+							for (int x = 0; x < widthX; x++) {
+								for (int y = 0; y < widthY; y++) {
+									for (int z = 0; z < widthZ; z++) {
+										if ((work++ & 1023) == 0 && context.isCancelled()) {
+											return;
+										}
+										BlockPos source = min.add(x, y, z);
+										IBlockState blockState = snapshot.get(source);
+										if (blockState == null) {
+											continue;
+										}
+										BlockPos target;
+										if (direction.getAxis() == EnumFacing.Axis.Y) {
+											target = min.add(x, widthY - y - 1, z);
+										} else if (direction.getAxis() == EnumFacing.Axis.Z) {
+											target = min.add(x, y, widthZ - z - 1);
+										} else {
+											target = min.add(widthX - x - 1, y, z);
+										}
+										blockList.put(target, Manager.flipBlockstate(blockState, direction.getAxis()));
+									}
+								}
+							}
+							context.postClient(clientWorld -> TaskManager.getInstance()
+									.addTask(new TaskSetBlock(blockList, clientWorld)));
+						});
+				ScanFeedback.report(result, selection);
 			} else {
 				Manager.sendMessage(new TextComponentTranslation("text.worldedit.noAreaSelected"));
 			}

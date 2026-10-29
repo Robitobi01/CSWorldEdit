@@ -32,11 +32,11 @@ public abstract class MixinGuiBossOverlay extends Gui {
 
 	@Inject(method = "renderBossHealth", at = @At("HEAD"))
 	private void renderProgressBar(CallbackInfo ci) {
-		if (!Configuration.enabled) {
+		if (!Configuration.general.enabled) {
 			return;
 		}
 		final Minecraft mc = Minecraft.getMinecraft();
-		final float progress = TaskManager.getInstance().getProgress();
+		final float progress = Math.max(0F, Math.min(1F, TaskManager.getInstance().getProgress()));
 		ScaledResolution scaledresolution = new ScaledResolution(mc);
 		int i = scaledresolution.getScaledWidth();
 		int y = scaledresolution.getScaledHeight() - 30;
@@ -70,5 +70,7 @@ public abstract class MixinGuiBossOverlay extends Gui {
 		if (worldEdit$counter > 3) {
 			worldEdit$counter = 0;
 		}
+		mc.getTextureManager().bindTexture(ICONS);
+		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 	}
 }

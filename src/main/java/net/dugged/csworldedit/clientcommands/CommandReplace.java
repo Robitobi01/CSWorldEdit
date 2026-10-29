@@ -2,6 +2,9 @@ package net.dugged.csworldedit.clientcommands;
 
 import net.dugged.csworldedit.Manager;
 import net.dugged.csworldedit.Selection;
+import net.dugged.csworldedit.scan.ClientWorldView;
+import net.dugged.csworldedit.scan.ScanFeedback;
+import net.dugged.csworldedit.scan.SnapshotManager;
 import net.dugged.csworldedit.tasks.TaskManager;
 import net.dugged.csworldedit.tasks.TaskSetBlock;
 import net.minecraft.block.Block;
@@ -19,9 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static net.dugged.csworldedit.Selection.Position.A;
-import static net.dugged.csworldedit.Selection.Position.B;
-
 public class CommandReplace extends ClientCommand {
 
 	@Override
@@ -34,32 +34,10 @@ public class CommandReplace extends ClientCommand {
 		return new TextComponentTranslation("text.worldedit.replace.usage").getUnformattedText();
 	}
 
-	public void replaceBlocks(World world, Selection selection, IBlockState stateToReplace,
-							  IBlockState replacementState, boolean ignoreBlockState, boolean preserveMeta) {
-		Map<BlockPos, IBlockState> blocksToPlace = new HashMap<>();
-		for (BlockPos pos : BlockPos.MutableBlockPos.getAllInBox(selection.getPos(A), selection.getPos(B))) {
-			if (Thread.interrupted()) {
-				return;
-			}
-			IBlockState blockState = world.getBlockState(pos);
-			if (blockState == stateToReplace || (ignoreBlockState && blockState.getBlock() == stateToReplace.getBlock())) {
-				if (preserveMeta) {
-					int meta = blockState.getBlock().getMetaFromState(blockState);
-					IBlockState newReplacementState = replacementState.getBlock().getStateFromMeta(meta);
-					blocksToPlace.put(pos, newReplacementState);
-				} else {
-					blocksToPlace.put(pos, replacementState);
-				}
-			}
-		}
-		TaskSetBlock task = new TaskSetBlock(blocksToPlace, world);
-		TaskManager.getInstance().addTask(task);
-	}
-
 	@Override
 	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 		if (Manager.hasCurrentSelection()) {
-			Selection selection = Manager.getCurrentSelection();
+			Selection selection = Manager.getCurrentSelection().copy();
 			if (args.length == 3 || args.length == 4) {
 				final World world = sender.getEntityWorld();
 				Block block1 = getBlockByText(sender, args[0]);
@@ -86,10 +64,43 @@ public class CommandReplace extends ClientCommand {
 				} else {
 					blockState2 = block2.getDefaultState();
 				}
-				Thread t = new Thread(() -> replaceBlocks(world, selection, blockState1, blockState2, ignoreBlockState
-						, preserveMeta));
-				t.start();
-				TaskManager.getInstance().threads.add(t);
+				final IBlockState stateToReplace = blockState1;
+				final IBlockState replacementState = blockState2;
+				final boolean ignore = ignoreBlockState;
+				final boolean keepMeta = preserveMeta;
+				BlockPos min = selection.minPos();
+				BlockPos max = selection.maxPos();
+				SnapshotManager.SubmitResult result = SnapshotManager.getInstance().submitRegion(world,
+						new ClientWorldView(world), min.getX(), min.getY(), min.getZ(), max.getX(), max.getY(),
+						max.getZ(), (snapshot, context) -> {
+							Map<BlockPos, IBlockState> blocksToPlace = new HashMap<>();
+							int work = 0;
+							for (int y = snapshot.minY(); y < snapshot.minY() + snapshot.sizeY(); y++) {
+								for (int z = snapshot.minZ(); z < snapshot.minZ() + snapshot.sizeZ(); z++) {
+									for (int x = snapshot.minX(); x < snapshot.minX() + snapshot.sizeX(); x++) {
+										if ((work++ & 1023) == 0 && context.isCancelled()) {
+											return;
+										}
+										IBlockState blockState = snapshot.get(x, y, z);
+										if (blockState == null) {
+											continue;
+										}
+										if (blockState == stateToReplace || (ignore && blockState.getBlock() == stateToReplace.getBlock())) {
+											BlockPos pos = new BlockPos(x, y, z);
+											if (keepMeta) {
+												int meta = blockState.getBlock().getMetaFromState(blockState);
+												blocksToPlace.put(pos, replacementState.getBlock().getStateFromMeta(meta));
+											} else {
+												blocksToPlace.put(pos, replacementState);
+											}
+										}
+									}
+								}
+							}
+							context.postClient(clientWorld -> TaskManager.getInstance()
+									.addTask(new TaskSetBlock(blocksToPlace, clientWorld)));
+						});
+				ScanFeedback.report(result, selection);
 			} else {
 				Manager.sendMessage(getUsage(sender));
 			}
@@ -103,6 +114,10 @@ public class CommandReplace extends ClientCommand {
 										  @Nullable BlockPos pos) {
 		if (args.length == 1 || args.length == 3) {
 			return getListOfStringsMatchingLastWord(args, Block.REGISTRY.getKeys());
+		} else if (args.length == 2) {
+			return getListOfStringsMatchingLastWord(args, "*", "#");
+		} else if (args.length == 4) {
+			return getListOfStringsMatchingLastWord(args, "*");
 		} else {
 			return Collections.emptyList();
 		}

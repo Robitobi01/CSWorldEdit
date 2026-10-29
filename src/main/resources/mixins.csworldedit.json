@@ -5,14 +5,14 @@
 	"target": "@env(DEFAULT)",
 	"minVersion": "0.8.5",
 	"compatibilityLevel": "JAVA_25",
-	"mixins": [],
+	"mixins": [
+		"MixinChunkSPEdit"
+	],
 	"server": [],
 	"client": [
 		"IItemSword",
 		"MixinGuiBossOverlay",
-		"MixinGuiScreen",
 		"MixinMinecraft",
-		"MixinNetHandlerPlayClient",
-		"MixinTabCompleter"
+		"MixinNetHandlerPlayClient"
 	]
 }

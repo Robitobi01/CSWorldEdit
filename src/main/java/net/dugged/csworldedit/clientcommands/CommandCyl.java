@@ -31,10 +31,9 @@ public class CommandCyl extends ClientCommand {
 		return new TextComponentTranslation("text.worldedit.cyl.usage").getUnformattedText();
 	}
 
-	private void generateCyl(World world, BlockPos center, IBlockState blockState, double radius, int height) {
-		if (height > world.getHeight() - center.getY()) {
-			height = world.getHeight() - center.getY();
-		}
+	private void generateCyl(World world, int worldHeight, BlockPos center, IBlockState blockState, double radius,
+							 int height) {
+		height = net.dugged.csworldedit.Geometry.cylinderHeight(center.getY(), worldHeight, height);
 		List<BlockPosBB> positions = new ArrayList<>();
 		for (double x = 0; x <= radius; x++) {
 			for (double z = 0; z <= radius; z++) {
@@ -47,20 +46,25 @@ public class CommandCyl extends ClientCommand {
 						BlockPos pos2 = new BlockPos(center.getX() + (int) x, center.getY() + height - 1,
 								center.getZ() + (int) z);
 						positions.add(new BlockPosBB(pos1, pos2));
-						BlockPos pos3 = new BlockPos(center.getX() - (int) x, center.getY(), center.getZ() - (int) z);
-						BlockPos pos4 = new BlockPos(center.getX() - (int) x, center.getY() + height - 1,
-								center.getZ() + (int) z);
-						positions.add(new BlockPosBB(pos3, pos4));
+						if (net.dugged.csworldedit.Geometry.isDistinctCylinderMirror((int) x)) {
+							BlockPos pos3 = new BlockPos(center.getX() - (int) x, center.getY(),
+									center.getZ() - (int) z);
+							BlockPos pos4 = new BlockPos(center.getX() - (int) x, center.getY() + height - 1,
+									center.getZ() + (int) z);
+							positions.add(new BlockPosBB(pos3, pos4));
+						}
 					}
 				}
 			}
 		}
-		UndoSnapshot snapshot = new UndoSnapshot();
-		for (BlockPosBB bb : positions) {
-			TaskFill task = new TaskFill(bb.getPos1(), bb.getPos2(), blockState, world, snapshot);
-			TaskManager.getInstance().addTask(task);
-		}
-		UndoManager.getInstance().pushSnapshot(snapshot);
+		TaskManager.getInstance().scheduleClient(() -> {
+			UndoSnapshot snapshot = new UndoSnapshot();
+			for (BlockPosBB bb : positions) {
+				TaskFill task = new TaskFill(bb.getPos1(), bb.getPos2(), blockState, world, snapshot);
+				TaskManager.getInstance().addTask(task);
+			}
+			UndoManager.getInstance().pushSnapshot(snapshot);
+		});
 	}
 
 	@Override
@@ -70,16 +74,19 @@ public class CommandCyl extends ClientCommand {
 				Selection selection = Manager.getCurrentSelection();
 				if (selection.isOneByOne()) {
 					World world = sender.getEntityWorld();
+					BlockPos center = selection.getPos(A);
 					Block block = getBlockByText(sender, args[0]);
 					IBlockState blockState = convertArgToBlockState(block, args[1]);
-					double radius = parseInt(args[2]) + 0.5;
+					int worldHeight = world.getHeight();
+					double radius = Math.max(0, parseInt(args[2])) + 0.5;
 					int height;
 					if (args.length > 3) {
 						height = Math.max(1, parseInt(args[3]));
 					} else {
 						height = 1;
 					}
-					Thread t = new Thread(() -> generateCyl(world, selection.getPos(A), blockState, radius, height));
+					Thread t = new Thread(() -> generateCyl(world, worldHeight, center, blockState, radius,
+							height));
 					t.start();
 					TaskManager.getInstance().threads.add(t);
 				} else {

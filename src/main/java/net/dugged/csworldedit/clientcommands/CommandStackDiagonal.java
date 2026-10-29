@@ -38,6 +38,10 @@ public class CommandStackDiagonal extends ClientCommand {
 			Selection selection = Manager.getCurrentSelection();
 			if (args.length >= 4 && args.length <= 6) {
 				int count = parseInt(args[0]);
+				if (count <= 0) {
+					Manager.sendMessage(getUsage(sender));
+					return;
+				}
 				int xOffset = parseInt(args[1]);
 				int yOffset = parseInt(args[2]);
 				int zOffset = parseInt(args[3]);
@@ -60,10 +64,11 @@ public class CommandStackDiagonal extends ClientCommand {
 				for (int i = 1; i <= count; i++) {
 					BlockPos dest = minPos.add(i * xOffset, i * yOffset, i * zOffset);
 					TaskClone task = new TaskClone(minPos, maxPos, dest, world, mode, snapshot);
-					Thread t = new Thread(() -> TaskManager.getInstance().addTask(task));
-					t.start();
-					TaskManager.getInstance().threads.add(t);
-					endPos = dest.add(selection.widthX(), selection.widthY(), selection.widthZ());
+					TaskManager.getInstance().addTask(task);
+					endPos = new BlockPos(
+							net.dugged.csworldedit.Geometry.stackEnd(dest.getX(), selection.widthX()),
+							net.dugged.csworldedit.Geometry.stackEnd(dest.getY(), selection.widthY()),
+							net.dugged.csworldedit.Geometry.stackEnd(dest.getZ(), selection.widthZ()));
 				}
 				UndoManager.getInstance().pushSnapshot(snapshot);
 				if (moveSelection) {

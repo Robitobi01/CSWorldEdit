@@ -31,10 +31,9 @@ public class CommandHCyl extends ClientCommand {
 		return new TextComponentTranslation("text.worldedit.hcyl.usage").getUnformattedText();
 	}
 
-	private void generateHCyl(World world, BlockPos center, IBlockState blockState, double radius, int height) {
-		if (height > world.getHeight() - center.getY()) {
-			height = world.getHeight() - center.getY();
-		}
+	private void generateHCyl(World world, int worldHeight, BlockPos center, IBlockState blockState, double radius,
+							  int height) {
+		height = net.dugged.csworldedit.Geometry.cylinderHeight(center.getY(), worldHeight, height);
 		List<BlockPosBB> positions = new ArrayList<>();
 		int intRadius = (int) radius;
 		for (int x = 0; x <= intRadius; x++) {
@@ -75,12 +74,14 @@ public class CommandHCyl extends ClientCommand {
 				}
 			}
 		}
-		UndoSnapshot snapshot = new UndoSnapshot();
-		for (BlockPosBB bb : positions) {
-			TaskFill task = new TaskFill(bb.getPos1(), bb.getPos2(), blockState, world, snapshot);
-			TaskManager.getInstance().addTask(task);
-		}
-		UndoManager.getInstance().pushSnapshot(snapshot);
+		TaskManager.getInstance().scheduleClient(() -> {
+			UndoSnapshot snapshot = new UndoSnapshot();
+			for (BlockPosBB bb : positions) {
+				TaskFill task = new TaskFill(bb.getPos1(), bb.getPos2(), blockState, world, snapshot);
+				TaskManager.getInstance().addTask(task);
+			}
+			UndoManager.getInstance().pushSnapshot(snapshot);
+		});
 	}
 
 	@Override
@@ -90,11 +91,14 @@ public class CommandHCyl extends ClientCommand {
 				Selection selection = Manager.getCurrentSelection();
 				if (selection.isOneByOne()) {
 					World world = sender.getEntityWorld();
+					BlockPos center = selection.getPos(A);
 					Block block = getBlockByText(sender, args[0]);
 					IBlockState blockState = convertArgToBlockState(block, args[1]);
-					double radius = parseInt(args[2]) + 0.5;
+					int worldHeight = world.getHeight();
+					double radius = Math.max(0, parseInt(args[2])) + 0.5;
 					int height = (args.length > 3) ? Math.max(1, parseInt(args[3])) : 1;
-					Thread t = new Thread(() -> generateHCyl(world, selection.getPos(A), blockState, radius, height));
+					Thread t = new Thread(() -> generateHCyl(world, worldHeight, center, blockState,
+							radius, height));
 					t.start();
 					TaskManager.getInstance().threads.add(t);
 				} else {

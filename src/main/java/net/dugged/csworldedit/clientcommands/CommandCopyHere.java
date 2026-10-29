@@ -38,9 +38,7 @@ public class CommandCopyHere extends ClientCommand {
 				TaskClone.Mode mode = moveSelection ? TaskClone.Mode.MOVE : TaskClone.Mode.FORCE;
 				TaskClone task = new TaskClone(selection.minPos(), selection.maxPos(), Manager.playerPos(),
 						sender.getEntityWorld(), mode);
-				Thread t = new Thread(() -> TaskManager.getInstance().addTask(task));
-				t.start();
-				TaskManager.getInstance().threads.add(t);
+				TaskManager.getInstance().addTask(task);
 			} else {
 				Manager.sendMessage(new TextComponentTranslation("text.worldedit.copyhere.usage"));
 			}

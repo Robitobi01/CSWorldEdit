@@ -38,6 +38,10 @@ public class CommandStack extends ClientCommand {
 			Selection selection = Manager.getCurrentSelection();
 			if (args.length >= 1 && args.length <= 4) {
 				int count = parseInt(args[0]);
+				if (count <= 0) {
+					Manager.sendMessage(getUsage(sender));
+					return;
+				}
 				boolean masked = false;
 				boolean moveSelection = false;
 				int blocksOffset = 0;

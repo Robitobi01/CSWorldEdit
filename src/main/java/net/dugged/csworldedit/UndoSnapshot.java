@@ -1,20 +1,35 @@
 package net.dugged.csworldedit;
 
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class UndoSnapshot {
 
-	private final Map<BlockPos, IBlockState> undoData = new HashMap<>();
+	private final Map<BlockPos, IBlockState> undoData = new ConcurrentHashMap<>();
+	private final Map<BlockPos, Map<Integer, ItemStack>> itemData = new ConcurrentHashMap<>();
+	private volatile boolean pending;
+
+	public void markPending() {
+		pending = true;
+	}
+
+	public boolean isPending() {
+		return pending;
+	}
+
+	public void clearPending() {
+		pending = false;
+	}
 
 	public void recordPositions(Set<BlockPos> positions, World world) {
 		for (BlockPos pos : positions) {
-			undoData.put(pos, world.getBlockState(pos));
+			undoData.putIfAbsent(pos, world.getBlockState(pos));
 		}
 	}
 
@@ -29,13 +44,42 @@ public class UndoSnapshot {
 			for (int y = y1; y <= y2; y++) {
 				for (int z = z1; z <= z2; z++) {
 					BlockPos pos = new BlockPos(x, y, z);
-					undoData.put(pos, world.getBlockState(pos));
+					undoData.putIfAbsent(pos, world.getBlockState(pos));
 				}
 			}
 		}
 	}
 
+	public boolean recordOriginal(BlockPos pos, IBlockState state) {
+		return undoData.putIfAbsent(pos, state) == null;
+	}
+
+	public void removeOriginal(BlockPos pos) {
+		undoData.remove(pos);
+	}
+
+	public void recordItemSlot(BlockPos pos, int slot, ItemStack stack) {
+		itemData.computeIfAbsent(pos, key -> new ConcurrentHashMap<>())
+				.putIfAbsent(slot, stack == null ? ItemStack.EMPTY : stack.copy());
+	}
+
 	public Map<BlockPos, IBlockState> getUndoData() {
 		return undoData;
+	}
+
+	public Map<BlockPos, Map<Integer, ItemStack>> getItemData() {
+		return itemData;
+	}
+
+	public int size() {
+		int size = undoData.size();
+		for (Map<Integer, ItemStack> slots : itemData.values()) {
+			size += slots.size();
+		}
+		return size;
+	}
+
+	public boolean isEmpty() {
+		return undoData.isEmpty() && itemData.isEmpty();
 	}
 }

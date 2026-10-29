@@ -9,7 +9,6 @@ import net.dugged.csworldedit.brushes.BrushPlaceTop;
 import net.dugged.csworldedit.brushes.BrushRemoveColumn;
 import net.dugged.csworldedit.tasks.TaskManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiChat;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandHandler;
@@ -27,17 +26,12 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.IntStream;
-
-import static net.minecraft.util.text.TextFormatting.GRAY;
-import static net.minecraft.util.text.TextFormatting.RESET;
 
 public class ClientCommandHandler extends CommandHandler {
 
 	public static final int PACKET_LIMIT = 5000;
 	private static final ClientCommandHandler instance = new ClientCommandHandler();
 	private final Minecraft mc = Minecraft.getMinecraft();
-	public String[] latestAutoComplete = null;
 	private boolean forgeCommandsRegistered = false;
 
 	public static ClientCommandHandler getInstance() {
@@ -100,11 +94,7 @@ public class ClientCommandHandler extends CommandHandler {
 		Manager.brushes.add(new BrushPerimeterWall());
 		Manager.brushes.add(new BrushPlaceTop());
 
-		// Cleanroom 0.7's command suggestion UI reads Forge's client command registry,
-		// not this legacy handler. Mirror only the completion/execution surface there.
-		if (Configuration.enabled) {
-			registerForgeCommands();
-		}
+		registerForgeCommands();
 	}
 
 	private void registerForgeCommands() {
@@ -192,7 +182,7 @@ public class ClientCommandHandler extends CommandHandler {
 
 		@Override
 		public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
-			if (!Configuration.enabled) {
+			if (!Configuration.general.enabled) {
 				if (sender instanceof EntityPlayerSP) {
 					final StringBuilder command = new StringBuilder("/").append(delegate.getName());
 					for (String arg : args) {
@@ -202,7 +192,11 @@ public class ClientCommandHandler extends CommandHandler {
 				}
 				return;
 			}
-			owner.executeClientCommand(sender, delegate, args, delegate.getName());
+			StringBuilder input = new StringBuilder(delegate.getName());
+			for (String arg : args) {
+				input.append(' ').append(arg);
+			}
+			owner.executeClientCommand(sender, delegate, args, input.toString());
 		}
 
 		@Override
@@ -227,26 +221,6 @@ public class ClientCommandHandler extends CommandHandler {
 		}
 	}
 
-	public void autoComplete(String leftOfCursor) {
-		this.latestAutoComplete = null;
-		if (leftOfCursor.charAt(0) == '/') {
-			leftOfCursor = leftOfCursor.substring(1);
-			if (mc.currentScreen instanceof GuiChat) {
-				final List<String> commands = this.getTabCompletions(mc.player, leftOfCursor, mc.player.getPosition());
-				if (!commands.isEmpty()) {
-					if (leftOfCursor.indexOf(' ') == -1) {
-						IntStream.range(0, commands.size()).forEach(s -> commands.set(s,
-								GRAY + "/" + commands.get(s) + RESET));
-					} else {
-						IntStream.range(0, commands.size()).forEach(s -> commands.set(s,
-								GRAY + commands.get(s) + RESET));
-					}
-					this.latestAutoComplete = commands.toArray(new String[0]);
-				}
-			}
-		}
-	}
-
 	@Override
 	protected MinecraftServer getServer() {
 		return mc.getIntegratedServer();
@@ -256,7 +230,9 @@ public class ClientCommandHandler extends CommandHandler {
 		if (mc.world == null) {
 			return;
 		}
-		if (CSWorldEdit.tickCounter % 36000 == 0 && !mc.ingameGUI.getChatGUI().getChatOpen()) {
+		if (!mc.ingameGUI.getChatGUI().getChatOpen()
+				&& (CSWorldEdit.tickCounter % 36000 == 0
+				|| (TaskManager.getInstance().isActive() && CSWorldEdit.tickCounter % 600 == 0))) {
 			updatePermissions();
 		}
 		TaskManager.getInstance().tick();
