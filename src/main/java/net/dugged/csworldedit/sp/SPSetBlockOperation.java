@@ -2,6 +2,7 @@ package net.dugged.csworldedit.sp;
 
 import net.dugged.csworldedit.UndoSnapshot;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 
@@ -65,7 +66,13 @@ public final class SPSetBlockOperation implements SPOperation {
 		if (changes != null) {
 			while (used < budget && index < changes.size()) {
 				Change change = changes.get(index++);
-				SPBlockEditor.setBlock(world, change.pos(), change.state(), undo, recordUndo);
+				if (!world.isOutsideBuildHeight(change.pos())) {
+					boolean changed = SPBlockEditor.setBlock(world, change.pos(), change.state(), undo, recordUndo);
+					NBTTagCompound nbt = change.nbt();
+					if (nbt != null && (changed || world.getBlockState(change.pos()) == change.state())) {
+						world.setTileEntityNbt(change.pos(), nbt.copy());
+					}
+				}
 				processed++;
 				used++;
 			}
@@ -88,6 +95,14 @@ public final class SPSetBlockOperation implements SPOperation {
 		return processed >= total;
 	}
 
-	public record Change(BlockPos pos, IBlockState state) {
+	public record Change(BlockPos pos, IBlockState state, NBTTagCompound nbt) {
+		public Change(BlockPos pos, IBlockState state) {
+			this(pos, state, null);
+		}
+
+		public Change {
+			pos = new BlockPos(pos);
+			nbt = nbt == null ? null : nbt.copy();
+		}
 	}
 }

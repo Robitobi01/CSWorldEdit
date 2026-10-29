@@ -11,6 +11,7 @@ public abstract class TaskChunk extends AbstractTask {
 
 	private SPEditJob directJob;
 	private boolean directSubmitted;
+	private boolean cancelled;
 
 	public abstract int processChunk(ChunkPos pos, int maxPackets);
 
@@ -47,6 +48,19 @@ public abstract class TaskChunk extends AbstractTask {
 		if (directJob != null) {
 			directJob.cancel();
 		}
+	}
+
+	public final void cancel() {
+		cancelled = true;
+		cancelDirect();
+	}
+
+	public final boolean isCancelled() {
+		return cancelled || (directJob != null && directJob.isCancelled());
+	}
+
+	protected final boolean isTaskCancelled() {
+		return cancelled;
 	}
 
 	protected final SPEditJob directJob() {

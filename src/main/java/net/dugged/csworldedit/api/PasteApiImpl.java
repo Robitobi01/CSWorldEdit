@@ -63,7 +63,7 @@ final class PasteApiImpl implements PasteService {
 		long current = TaskManager.getInstance().getGeneration();
 		for (PasteSessionImpl session : new ArrayList<>(sessions.values())) {
 			if (session.generation() != current) {
-				session.cancel(CancelReason.WORLD_CHANGED);
+				session.cancel(CancelReason.CANCELLED_EXTERNALLY);
 			} else {
 				session.tick();
 			}

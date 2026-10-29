@@ -3,16 +3,13 @@ package net.dugged.csworldedit.api;
 import net.dugged.csworldedit.UndoManager;
 import net.dugged.csworldedit.UndoSnapshot;
 import net.dugged.csworldedit.sp.SPEditBackend;
-import net.dugged.csworldedit.sp.SPEditJob;
 import net.dugged.csworldedit.tasks.TaskManager;
+import net.dugged.csworldedit.tasks.TaskSetBlock;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 final class PasteSessionImpl implements PasteSession {
@@ -79,10 +76,6 @@ final class PasteSessionImpl implements PasteSession {
 		if (mc.world == null || mc.player == null || mc.world.provider.getDimension() != dimension) {
 			return SubmitResult.CLOSED;
 		}
-		if (direct == null) {
-			direct = SPEditBackend.isAvailable(mc.world);
-		}
-		Set<BlockPos> positions = new LinkedHashSet<>();
 		for (BlockChange change : batch) {
 			BlockPos pos = change.pos();
 			if (mc.world.isOutsideBuildHeight(pos)) {
@@ -94,54 +87,46 @@ final class PasteSessionImpl implements PasteSession {
 			if (change.state().getBlock().getRegistryName() == null) {
 				return SubmitResult.INVALID;
 			}
-			positions.add(pos);
-		}
-		int omitted = 0;
-		if (!direct) {
-			for (BlockChange change : batch) {
-				if (change.rawTileEntityNbt() != null) {
-					omitted++;
-				}
-			}
 		}
 		if (queuedChanges + batch.size() > options.maxQueuedChanges()) {
 			return SubmitResult.BACKPRESSURE;
 		}
-
-		Batch entry = new Batch(batch.size());
-		if (direct) {
-			List<BlockChange> ordered = new ArrayList<>(batch.size());
-			for (BlockChange change : batch) {
-				if (!PasteCommandPlanner.placeLast(change.state().getBlock())) {
-					ordered.add(change);
-				}
-			}
-			for (BlockChange change : batch) {
-				if (PasteCommandPlanner.placeLast(change.state().getBlock())) {
-					ordered.add(change);
-				}
-			}
-			SPEditJob job = SPEditBackend.getInstance().createJob(mc.world,
-					Collections.singletonList(new ApiSPSetBlockOperation(ordered)), true, undo);
-			if (job == null) {
-				state = PasteState.FAILED;
-				cancelReason = CancelReason.INVALID;
-				return SubmitResult.UNAVAILABLE;
-			}
-			if (!SPEditBackend.getInstance().submit(job)) {
-				return SubmitResult.BACKPRESSURE;
-			}
-			entry.job = job;
-		} else {
-			undo.recordPositions(positions, mc.world);
-			ApiCommandTask task = new ApiCommandTask(batch);
-			TaskManager.getInstance().addTask(task);
-			entry.task = task;
+		boolean expectedDirect = direct != null ? direct : SPEditBackend.isAvailable(mc.world);
+		List<TaskSetBlock.SetBlockOperation> operations = new ArrayList<>(batch.size());
+		for (BlockChange change : batch) {
+			operations.add(new TaskSetBlock.SetBlockOperation(change.pos(), change.state(),
+					change.rawTileEntityNbt()));
 		}
+		TaskSetBlock task = new TaskSetBlock(operations, mc.world, undo);
+		if (task.isDirectMode() != expectedDirect) {
+			task.cancel();
+			cancelInternal(CancelReason.INVALID);
+			return SubmitResult.UNAVAILABLE;
+		}
+		if (!task.isDirectMode() && !TaskSetBlock.setblockPermission) {
+			task.cancel();
+			cancelInternal(CancelReason.INVALID);
+			return SubmitResult.UNAVAILABLE;
+		}
+		if (!task.isDirectMode()) {
+			for (BlockChange change : batch) {
+				if (change.rawTileEntityNbt() != null) {
+					nbtOmitted++;
+				}
+			}
+		}
+		if (task.isDirectMode() && !task.trySubmitDirect()) {
+			return SubmitResult.BACKPRESSURE;
+		}
+		TaskManager.getInstance().addTask(task);
+		if (direct == null) {
+			direct = task.isDirectMode();
+		}
+		Batch entry = new Batch(batch.size());
+		entry.task = task;
 		batches.add(entry);
 		total += batch.size();
 		queuedChanges += batch.size();
-		nbtOmitted += omitted;
 		return SubmitResult.ACCEPTED;
 	}
 
@@ -177,18 +162,20 @@ final class PasteSessionImpl implements PasteSession {
 			if (batch.done) {
 				continue;
 			}
-			Batch work = batch;
-			if (work.job != null) {
-				work.job.cancel();
-				work.job = null;
+			if (batch.task != null) {
+				batch.processed = batch.task.getProcessedOperations();
+				batch.done = true;
+				batch.task.cancel();
+				batch.task = null;
 			}
-			if (work.task != null) {
-				work.task.cancel();
-				work.task = null;
-			}
-			work.done = true;
 		}
+		processed = processed();
 		queuedChanges = 0;
+		if (reason == CancelReason.WORLD_CHANGED || reason == CancelReason.SHUTDOWN || processed == 0) {
+			undo.clearPending();
+		} else {
+			pushUndo();
+		}
 	}
 
 	@Override
@@ -205,21 +192,7 @@ final class PasteSessionImpl implements PasteSession {
 			if (batch.done) {
 				continue;
 			}
-			if (batch.job != null) {
-				if (batch.job.isCancelled()) {
-					batch.done = true;
-					batch.processed = batch.job.processed();
-					externallyCancelled = true;
-				} else if (batch.job.isDone()) {
-					batch.done = true;
-					batch.processed = batch.job.processed();
-				} else {
-					batch.processed = batch.job.processed();
-				}
-				if (batch.done) {
-					batch.job = null;
-				}
-			} else if (batch.task != null) {
+			if (batch.task != null) {
 				if (batch.task.isCancelled()) {
 					batch.done = true;
 					batch.processed = batch.task.getProcessedOperations();
@@ -240,15 +213,13 @@ final class PasteSessionImpl implements PasteSession {
 			return;
 		}
 
-		long processedNow = 0;
+		processed = processed();
 		int queued = 0;
 		for (Batch batch : batches) {
-			processedNow += Math.max(0, Math.min(batch.size, batch.processed));
 			if (!batch.done) {
 				queued += batch.size;
 			}
 		}
-		processed = processedNow;
 		queuedChanges = queued;
 		if (committed && queued == 0 && state == PasteState.RUNNING) {
 			state = PasteState.COMPLETED;
@@ -256,22 +227,31 @@ final class PasteSessionImpl implements PasteSession {
 		}
 	}
 
+	private long processed() {
+		long result = 0;
+		for (Batch batch : batches) {
+			result += Math.max(0, Math.min(batch.size, batch.processed));
+		}
+		return result;
+	}
+
 	private void pushUndo() {
 		if (undoPushed) {
 			return;
 		}
 		undoPushed = true;
-		if (!undo.isEmpty()) {
-			UndoManager.getInstance().pushSnapshot(undo);
+		if (undo.isEmpty()) {
+			undo.clearPending();
+			return;
 		}
+		UndoManager.getInstance().pushSnapshot(undo);
 	}
 
 	private static final class Batch {
 		private final int size;
 		private long processed;
 		private boolean done;
-		private SPEditJob job;
-		private ApiCommandTask task;
+		private TaskSetBlock task;
 
 		private Batch(int size) {
 			this.size = size;

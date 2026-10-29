@@ -8,6 +8,7 @@ import net.dugged.csworldedit.sp.SPEditJob;
 import net.dugged.csworldedit.sp.SPSetBlockOperation;
 import net.minecraft.block.*;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
@@ -20,32 +21,66 @@ public class TaskSetBlock extends TaskChunk {
 	private final Map<ChunkPos, Queue<SetBlockOperation>> opsMap = new HashMap<>();
 	private final Map<ChunkPos, Deque<Batch>> batches = new HashMap<>();
 	private final World world;
+	private final UndoSnapshot snapshot;
+	private final boolean recordUndoOnProcess;
 	private final int totalOps;
 	private int processedOps = 0;
 
 	public TaskSetBlock(Map<BlockPos, IBlockState> blocksToPlace, World world) {
+		this(operations(blocksToPlace), blocksToPlace, world, null, true);
+	}
+
+	public TaskSetBlock(List<SetBlockOperation> operations, World world, UndoSnapshot sharedUndo) {
+		this(operations, null, world, sharedUndo, false);
+	}
+
+	private TaskSetBlock(List<SetBlockOperation> operations, Map<BlockPos, IBlockState> mapSource, World world,
+						 UndoSnapshot sharedUndo, boolean autoPush) {
 		this.world = world;
-		this.totalOps = blocksToPlace.size();
-		if (Configuration.direct.enabled && !blocksToPlace.isEmpty()) {
-			SPEditJob job = SPEditBackend.getInstance().createJob(world,
-					Collections.singletonList(new SPSetBlockOperation(blocksToPlace)), true);
+		this.totalOps = operations.size();
+		this.snapshot = sharedUndo != null ? sharedUndo : new UndoSnapshot();
+		this.recordUndoOnProcess = sharedUndo != null;
+		UndoSnapshot jobUndo = autoPush ? null : sharedUndo;
+		if (Configuration.direct.enabled && !operations.isEmpty()) {
+			SPEditJob job = SPEditBackend.getInstance().createJob(world, Collections.singletonList(
+					mapSource != null ? new SPSetBlockOperation(mapSource) : new SPSetBlockOperation(changes(operations))),
+					true, jobUndo);
 			if (job != null) {
+				if (sharedUndo != null) {
+					sharedUndo.markPending();
+				}
 				useDirectJob(job);
 				return;
 			}
 		}
-		UndoSnapshot snapshot = new UndoSnapshot();
-		if (!blocksToPlace.isEmpty()) {
-			snapshot.recordPositions(blocksToPlace.keySet(), world);
+		Set<BlockPos> positions = new LinkedHashSet<>();
+		for (SetBlockOperation operation : operations) {
+			positions.add(operation.pos);
+		}
+		if (autoPush && !positions.isEmpty()) {
+			snapshot.recordPositions(positions, world);
 			UndoManager.getInstance().pushSnapshot(snapshot);
 		}
-		for (Map.Entry<BlockPos, IBlockState> entry : blocksToPlace.entrySet()) {
-			BlockPos pos = entry.getKey();
-			IBlockState state = entry.getValue();
-			SetBlockOperation op = new SetBlockOperation(pos, state);
-			ChunkPos cp = new ChunkPos(pos);
-			opsMap.computeIfAbsent(cp, k -> new LinkedList<>()).offer(op);
+		for (SetBlockOperation operation : operations) {
+			ChunkPos cp = new ChunkPos(operation.pos);
+			opsMap.computeIfAbsent(cp, k -> new LinkedList<>()).offer(operation);
 		}
+	}
+
+	private static List<SetBlockOperation> operations(Map<BlockPos, IBlockState> blocksToPlace) {
+		List<SetBlockOperation> operations = new ArrayList<>(blocksToPlace.size());
+		for (Map.Entry<BlockPos, IBlockState> entry : blocksToPlace.entrySet()) {
+			operations.add(new SetBlockOperation(entry.getKey(), entry.getValue()));
+		}
+		return operations;
+	}
+
+	private static List<SPSetBlockOperation.Change> changes(List<SetBlockOperation> operations) {
+		List<SPSetBlockOperation.Change> changes = new ArrayList<>(operations.size());
+		for (SetBlockOperation operation : operations) {
+			changes.add(new SPSetBlockOperation.Change(operation.pos, operation.state, operation.nbt));
+		}
+		return changes;
 	}
 
 	private static boolean placeLast(Block block) {
@@ -54,7 +89,7 @@ public class TaskSetBlock extends TaskChunk {
 
 	@Override
 	public int processChunk(ChunkPos pos, int maxPackets) {
-		if (isDirectMode()) {
+		if (isDirectMode() || isTaskCancelled()) {
 			return 0;
 		}
 		Queue<SetBlockOperation> queue = opsMap.get(pos);
@@ -76,6 +111,7 @@ public class TaskSetBlock extends TaskChunk {
 				chunkBatches.poll();
 				processedOps += batch.opCount;
 				if (!world.getBlockState(batch.singlePos()).equals(batch.state)) {
+					recordUndo(batch);
 					sendSetBlockCommand(batch.singlePos(), batch.state);
 					commandsSent++;
 				}
@@ -90,6 +126,7 @@ public class TaskSetBlock extends TaskChunk {
 			}
 			if (changed == batch.opCount) {
 				chunkBatches.poll();
+				recordUndo(batch);
 				sendFillCommand(batch);
 				processedOps += batch.opCount;
 				commandsSent++;
@@ -114,6 +151,15 @@ public class TaskSetBlock extends TaskChunk {
 			opsMap.remove(pos);
 		}
 		return commandsSent;
+	}
+
+	private void recordUndo(Batch batch) {
+		if (!recordUndoOnProcess) {
+			return;
+		}
+		for (BlockPos pos : batch.positions()) {
+			snapshot.recordOriginal(pos, world.getBlockState(pos));
+		}
 	}
 
 	private int countChanged(Batch batch) {
@@ -246,12 +292,15 @@ public class TaskSetBlock extends TaskChunk {
 
 	@Override
 	public Set<ChunkPos> getPendingChunks() {
+		if (isTaskCancelled()) {
+			return Collections.emptySet();
+		}
 		return isDirectMode() ? directChunks() : opsMap.keySet();
 	}
 
 	@Override
 	public boolean isComplete() {
-		return isDirectMode() ? directDone() : opsMap.isEmpty();
+		return isTaskCancelled() || (isDirectMode() ? directDone() : opsMap.isEmpty());
 	}
 
 	private void sendSetBlockCommand(BlockPos pos, IBlockState blockState) {
@@ -273,11 +322,17 @@ public class TaskSetBlock extends TaskChunk {
 
 		public final BlockPos pos;
 		public final IBlockState state;
+		public final NBTTagCompound nbt;
 		public final boolean delayed;
 
 		public SetBlockOperation(BlockPos pos, IBlockState state) {
-			this.pos = pos;
+			this(pos, state, null);
+		}
+
+		public SetBlockOperation(BlockPos pos, IBlockState state, NBTTagCompound nbt) {
+			this.pos = new BlockPos(pos);
 			this.state = state;
+			this.nbt = nbt == null ? null : nbt.copy();
 			this.delayed = placeLast(state.getBlock());
 		}
 	}
