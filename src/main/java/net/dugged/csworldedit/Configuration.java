@@ -13,16 +13,16 @@ public final class Configuration {
 	public static final class General {
 		@Config.Comment("Enable CSWorldEdit client commands and overlays.")
 		public boolean enabled = false;
-		@Config.Comment("Maximum operation distance in chunks.")
+		@Config.Comment("Maximum distance in chunks from the player at which operations may run.")
 		public int operationRangeChunks = 6;
 	}
 
 	public static final class Direct {
-		@Config.Comment("Apply edits directly in singleplayer instead of using packets.")
+		@Config.Comment("Apply edits through the integrated server in local singleplayer instead of sending commands. Requires creative or spectator mode and is disabled on published LAN worlds.")
 		public boolean enabled = true;
-		@Config.Comment("Direct-edit blocks applied per server tick (minimum 1).")
+		@Config.Comment("Maximum blocks applied per server tick by the direct backend (values below 1 are treated as 1).")
 		public int blocksPerTick = 8192;
-		@Config.Comment("Maximum queued direct-edit jobs (minimum 1).")
+		@Config.Comment("Maximum direct jobs queued before new jobs wait (values below 1 are treated as 1).")
 		public int queueLimit = 512;
 	}
 }
